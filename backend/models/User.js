@@ -1,0 +1,220 @@
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+
+const UserSchema = new mongoose.Schema({
+  username: {
+    type: String,
+    required: [true, 'Username is required'],
+    unique: true,
+    trim: true,
+    minlength: [3, 'Username must be at least 3 characters long'],
+    match: [/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores and hyphens']
+  },
+  email: {
+    type: String,
+    required: [true, 'Email is required'],
+    unique: true,
+    match: [
+      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+      'Please provide a valid email'
+    ],
+    lowercase: true,
+    trim: true
+  },
+  password: {
+    type: String,
+    required: [true, 'Password is required'],
+    minlength: [6, 'Password must be at least 6 characters long'],
+    select: false
+    // Removed strict password validation regex to allow easier testing
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin', 'superadmin'],
+    default: 'user'
+  },
+  points: {
+    type: Number,
+    default: 0
+  },
+  team: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Team'
+  },
+  solvedChallenges: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Challenge'
+  }],
+  loginAttempts: {
+    type: Number,
+    default: 0
+  },
+  lockUntil: {
+    type: Date
+  },
+  resetPasswordToken: String,
+  resetPasswordExpire: Date,
+  isBlocked: {
+    type: Boolean,
+    default: false
+  },
+  blockedReason: {
+    type: String,
+    default: null
+  },
+  blockedAt: {
+    type: Date,
+    default: null
+  },
+  canSubmitFlags: {
+    type: Boolean,
+    default: true
+  },
+  showInLeaderboard: {
+    type: Boolean,
+    default: true
+  },
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  otp: {
+    type: String,
+    default: null,
+    select: false
+  },
+  otpExpire: {
+    type: Date,
+    default: null
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+// Encrypt password using bcrypt
+UserSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) {
+    return next();
+  }
+
+  const salt = await bcrypt.genSalt(12);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+// Match user entered password to hashed password in database
+UserSchema.methods.matchPassword = async function(enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// Check if account is locked
+UserSchema.methods.isLocked = function() {
+  return !!(this.lockUntil && this.lockUntil > Date.now());
+};
+
+// Increment login attempts
+UserSchema.methods.incrementLoginAttempts = async function() {
+  // If lock has expired, reset attempts
+  if (this.lockUntil && this.lockUntil < Date.now()) {
+    await this.updateOne({
+      $set: { loginAttempts: 1 },
+      $unset: { lockUntil: 1 }
+    });
+    return;
+  }
+
+  // Otherwise increment attempts
+  const attempts = this.loginAttempts + 1;
+  const updates = { $set: { loginAttempts: attempts } };
+
+  // Lock the account if we've reached max attempts
+  if (attempts >= parseInt(process.env.MAX_LOGIN_ATTEMPTS || 5, 10)) {
+    // Parse the LOGIN_TIMEOUT value (e.g., "15m" -> 15)
+    const loginTimeout = parseInt(process.env.LOGIN_TIMEOUT || 15, 10);
+    updates.$set.lockUntil = Date.now() + loginTimeout * 60 * 1000;
+  }
+
+  await this.updateOne(updates);
+};
+
+// Reset login attempts
+UserSchema.methods.resetLoginAttempts = async function() {
+  await this.updateOne({
+    $set: { loginAttempts: 0 },
+    $unset: { lockUntil: 1 }
+  });
+};
+
+// Generate password reset token
+UserSchema.methods.createPasswordResetToken = function() {
+  const resetToken = crypto.randomBytes(32).toString('hex');
+
+  this.resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+  return resetToken;
+};
+
+// Generate OTP for email verification
+UserSchema.methods.generateOTP = function() {
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  this.otp = crypto
+    .createHash('sha256')
+    .update(otp)
+    .digest('hex');
+  
+  this.otpExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+  
+  return otp;
+};
+
+// Verify OTP
+UserSchema.methods.verifyOTP = function(enteredOtp) {
+  const hashedOtp = crypto
+    .createHash('sha256')
+    .update(enteredOtp)
+    .digest('hex');
+  
+  if (this.otp !== hashedOtp) {
+    return false;
+  }
+  
+  if (this.otpExpire < Date.now()) {
+    return false;
+  }
+  
+  return true;
+};
+
+// Clear OTP after verification
+UserSchema.methods.clearOTP = function() {
+  this.otp = null;
+  this.otpExpire = null;
+};
+
+// Create indexes for better performance with multiple users
+UserSchema.index({ email: 1 }, { unique: true });
+UserSchema.index({ username: 1 }, { unique: true });
+UserSchema.index({ points: -1 }); // For leaderboard queries
+UserSchema.index({ solvedChallenges: 1 }); // For challenge lookup
+UserSchema.index({ role: 1 }); // For role-based queries
+UserSchema.index({ createdAt: 1 }); // For sorting by registration date
+UserSchema.index({ lockUntil: 1 }, { sparse: true }); // For account locking
+UserSchema.index({ resetPasswordExpire: 1 }, { sparse: true, expireAfterSeconds: 0 }); // TTL index for password reset
+
+// Compound indexes for complex queries
+UserSchema.index({ role: 1, points: -1 }); // For admin leaderboard queries
+UserSchema.index({ email: 1, lockUntil: 1 }, { sparse: true }); // For login attempt tracking
+UserSchema.index({ isBlocked: 1 }); // For blocked users queries
+UserSchema.index({ canSubmitFlags: 1 }); // For submission control queries
+UserSchema.index({ showInLeaderboard: 1 }); // For leaderboard visibility queries
+
+module.exports = mongoose.model('User', UserSchema);
