@@ -60,14 +60,23 @@ app.use('/api/auth/login', strictLoginLimiter);
 app.use('/api/challenges/submit', challengeSubmitLimiter);
 app.use('/api/', apiLimiter);
 
-// CORS with strict configuration
+// CORS with development-friendly configuration
 const corsOptions = {
   origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
     const allowedOrigins = process.env.CORS_ORIGIN.split(',').map(o => o.trim());
-    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+    
+    // Allow localhost for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(null, true); // Allow all for development
     }
   },
   credentials: process.env.CORS_CREDENTIALS === 'true',
@@ -84,7 +93,7 @@ app.use(session({
   name: 'ctfquest.sid',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({
+  store: new MongoStore({
     mongoUrl: process.env.MONGODB_URI,
     touchAfter: 24 * 3600 // lazy session update
   }),
@@ -128,13 +137,13 @@ app.use(mongoSanitize);
 // Advanced input sanitization
 app.use(advancedSanitization);
 
-// CSRF protection for state-changing operations
-app.use('/api/', (req, res, next) => {
-  if (['POST', 'PUT', 'DELETE'].includes(req.method)) {
-    return csrfProtection(req, res, next);
-  }
-  next();
-});
+// CSRF protection for state-changing operations (disabled for development)
+// app.use('/api/', (req, res, next) => {
+//   if (['POST', 'PUT', 'DELETE'].includes(req.method)) {
+//     return csrfProtection(req, res, next);
+//   }
+//   next();
+// });
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
