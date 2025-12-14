@@ -17,7 +17,7 @@ function Documentation() {
     <div className="documentation-container">
       <div className="documentation-header">
         <h1>Documentation <span className="highlight">& Guides</span></h1>
-        <p className="documentation-subtitle">Learn how to participate in pwngrid Horizon challenges</p>
+        <p className="documentation-subtitle">Learn how to participate in CTFQuest challenges</p>
       </div>
 
       <div className="documentation-content">
@@ -39,9 +39,9 @@ function Documentation() {
         <div className="documentation-main">
           {activeSection === 'getting-started' && (
             <section className="doc-section">
-              <h2>Getting Started with pwngrid Horizon</h2>
+              <h2>Getting Started with CTFQuest</h2>
               <p>
-                Welcome to pwngrid Horizon! This guide will help you get started with our platform and begin solving cybersecurity challenges.
+                Welcome to CTFQuest! This guide will help you get started with our platform and begin solving cybersecurity challenges.
               </p>
               
               <h3>Creating an Account</h3>
@@ -76,7 +76,7 @@ function Documentation() {
             <section className="doc-section">
               <h2>Challenge Types</h2>
               <p>
-                pwngrid Horizon offers various types of cybersecurity challenges to test different skills:
+                CTFQuest offers various types of cybersecurity challenges to test different skills:
               </p>
               
               <div className="challenge-type">
@@ -137,7 +137,7 @@ function Documentation() {
             <section className="doc-section">
               <h2>Team System</h2>
               <p>
-                pwngrid Horizon supports team-based competition where teams can compete together:
+                CTFQuest supports team-based competition where teams can compete together:
               </p>
               
               <h3>Creating and Joining Teams</h3>
@@ -168,7 +168,7 @@ function Documentation() {
             <section className="doc-section">
               <h2>Scoring System</h2>
               <p>
-                Understanding how points are awarded in pwngrid Horizon:
+                Understanding how points are awarded in CTFQuest:
               </p>
               
               <h3>Point Allocation</h3>

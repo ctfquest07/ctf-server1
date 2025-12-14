@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const LoginLog = require('../models/LoginLog');
 const { protect, authorize } = require('../middleware/auth');
+const { enhancedValidation } = require('../middleware/advancedSecurity');
 const { loginLimiter, generalLimiter, sanitizeInput, validateInput, securityHeaders } = require('../middleware/security');
 const { sendOTPEmail } = require('../utils/email');
 
@@ -29,16 +30,19 @@ const createLoginLog = async (user, req, status, failureReason = null) => {
     const userAgent = req.headers['user-agent'] || 'Unknown';
     const deviceInfo = parseUserAgent(userAgent);
     
-    await LoginLog.create({
-      user: user._id,
-      email: user.email,
-      username: user.username,
-      ipAddress,
-      userAgent,
-      status,
-      failureReason,
-      deviceInfo
-    });
+    // Only create log if user exists (has valid _id)
+    if (user && user._id) {
+      await LoginLog.create({
+        user: user._id,
+        email: user.email,
+        username: user.username,
+        ipAddress,
+        userAgent,
+        status,
+        failureReason,
+        deviceInfo
+      });
+    }
   } catch (error) {
     console.error('Error creating login log:', error);
   }
@@ -275,12 +279,13 @@ router.post('/login', loginLimiter, sanitizeInput, async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Validate inputs
+    // Enhanced input validation
     let validatedEmail;
     try {
-      validatedEmail = validateInput.email(email);
-      logActivity('LOGIN_ATTEMPT', { email: validatedEmail });
+      validatedEmail = enhancedValidation.email(email);
+      logActivity('LOGIN_ATTEMPT', { email: validatedEmail, ip: req.ip, userAgent: req.get('User-Agent') });
     } catch (validationError) {
+      logActivity('LOGIN_VALIDATION_FAILED', { email, error: validationError.message, ip: req.ip });
       return res.status(400).json({
         success: false,
         message: validationError.message
@@ -291,10 +296,6 @@ router.post('/login', loginLimiter, sanitizeInput, async (req, res) => {
     const user = await User.findOne({ email: validatedEmail }).select('+password');
 
     if (!user) {
-      // Create a dummy user object for logging failed attempts
-      const dummyUser = { _id: null, email: validatedEmail, username: 'Unknown' };
-      await createLoginLog(dummyUser, req, 'failed', 'User not found');
-      
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -330,7 +331,18 @@ router.post('/login', loginLimiter, sanitizeInput, async (req, res) => {
       // Log failed login attempt
       await createLoginLog(user, req, 'failed', 'Invalid password');
       
-      // Increment login attempts
+      // Increment login attempts with enhanced tracking
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+      
+      // Lock account after max attempts
+      const maxAttempts = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 3;
+      if (user.failedLoginAttempts >= maxAttempts) {
+        const lockTime = parseInt(process.env.LOGIN_TIMEOUT) || 30;
+        user.accountLockExpires = new Date(Date.now() + lockTime * 60 * 1000);
+        logActivity('ACCOUNT_LOCKED', { userId: user._id, ip: req.ip, attempts: user.failedLoginAttempts });
+      }
+      
+      await user.save();
       await user.incrementLoginAttempts();
 
       return res.status(401).json({
@@ -339,7 +351,13 @@ router.post('/login', loginLimiter, sanitizeInput, async (req, res) => {
       });
     }
 
-    // Reset login attempts on successful login
+    // Reset login attempts and update login info
+    user.failedLoginAttempts = 0;
+    user.accountLockExpires = undefined;
+    user.lastLoginAt = new Date();
+    user.lastLoginIP = req.ip;
+    await user.save();
+    
     await user.resetLoginAttempts();
 
     // Log successful login
@@ -348,9 +366,9 @@ router.post('/login', loginLimiter, sanitizeInput, async (req, res) => {
     // Populate team info
     await user.populate('team');
 
-    // Generate token
+    // Generate token with shorter expiry for security
     const token = generateToken(user._id);
-    logActivity('LOGIN_SUCCESS', { userId: user._id, username: user.username });
+    logActivity('LOGIN_SUCCESS', { userId: user._id, username: user.username, ip: req.ip, userAgent: req.get('User-Agent') });
 
     res.json({
       success: true,

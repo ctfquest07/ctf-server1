@@ -6,10 +6,26 @@ const fs = require('fs');
 const multer = require('multer');
 const cors = require('cors');
 const compression = require('compression');
-const { securityHeaders, generalLimiter } = require('./middleware/security');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
+const crypto = require('crypto');
+
+// Security middleware imports
+const { 
+  strictLoginLimiter, 
+  apiLimiter, 
+  challengeSubmitLimiter,
+  advancedHelmet,
+  advancedSanitization,
+  enhancedValidation,
+  csrfProtection,
+  secureFileUpload,
+  securityLogger,
+  mongoSanitize
+} = require('./middleware/advancedSecurity');
+
 const { concurrencyMiddleware } = require('./middleware/concurrency');
 const { cachingMiddleware, CACHE_CONFIG } = require('./middleware/caching');
-const { secureHeaders, sanitizers, validateRequest } = require('./middleware/securityAudit');
 
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -30,31 +46,95 @@ const analyticsRoutes = require('./routes/analytics');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Basic CORS setup before security middleware
-app.use(cors({
-  origin: process.env.CORS_ORIGIN === '*' ? true : (process.env.CORS_ORIGIN || 'http://localhost:5173'),
-  credentials: true,
+// Trust proxy for accurate IP addresses
+app.set('trust proxy', 1);
+
+// Security logging (must be first)
+app.use(securityLogger);
+
+// Advanced security headers
+app.use(advancedHelmet);
+
+// Rate limiting
+app.use('/api/auth/login', strictLoginLimiter);
+app.use('/api/challenges/submit', challengeSubmitLimiter);
+app.use('/api/', apiLimiter);
+
+// CORS with strict configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = process.env.CORS_ORIGIN.split(',').map(o => o.trim());
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: process.env.CORS_CREDENTIALS === 'true',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  optionsSuccessStatus: 200
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token'],
+  optionsSuccessStatus: 200,
+  maxAge: 86400 // 24 hours
+};
+app.use(cors(corsOptions));
+
+// Session configuration with secure settings
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  name: 'ctfquest.sid',
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    touchAfter: 24 * 3600 // lazy session update
+  }),
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'strict'
+  }
 }));
 
-// Performance middleware for 500+ concurrent users
-app.use(compression({ level: 6 })); // Gzip compression
+// Performance middleware
+app.use(compression({ 
+  level: 6,
+  threshold: 1024,
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) return false;
+    return compression.filter(req, res);
+  }
+}));
 
-// Enhanced security headers (replaces old security middleware)
-app.use(secureHeaders);
-
-// Concurrency management middleware (handles 500+ users)
+// Concurrency management
 app.use(concurrencyMiddleware);
 
-// Middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parsing with security limits
+app.use(express.json({ 
+  limit: '1mb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
+app.use(express.urlencoded({ 
+  extended: true, 
+  limit: '1mb',
+  parameterLimit: 20
+}));
 
-// Input sanitization and validation
-app.use(...sanitizers);
-app.use(validateRequest);
+// MongoDB injection protection
+app.use(mongoSanitize);
+
+// Advanced input sanitization
+app.use(advancedSanitization);
+
+// CSRF protection for state-changing operations
+app.use('/api/', (req, res, next) => {
+  if (['POST', 'PUT', 'DELETE'].includes(req.method)) {
+    return csrfProtection(req, res, next);
+  }
+  next();
+});
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -77,12 +157,11 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  // Accept only specific file types
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
-  if (allowedTypes.includes(file.mimetype)) {
+  try {
+    secureFileUpload.validateFile(file);
     cb(null, true);
-  } else {
-    cb(new Error('Invalid file type. Only JPEG, PNG, GIF and PDF files are allowed.'), false);
+  } catch (error) {
+    cb(error, false);
   }
 };
 
@@ -90,7 +169,11 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: process.env.MAX_FILE_SIZE || 5 * 1024 * 1024 // 5MB default
+    fileSize: parseInt(process.env.FILE_UPLOAD_MAX_SIZE) || secureFileUpload.maxFileSize,
+    files: 1,
+    fields: 10,
+    fieldNameSize: 50,
+    fieldSize: 1024
   }
 });
 

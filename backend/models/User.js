@@ -88,20 +88,55 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  passwordChangedAt: {
+    type: Date,
+    default: Date.now
+  },
+  lastLoginAt: {
+    type: Date
+  },
+  lastLoginIP: {
+    type: String
+  },
+  failedLoginAttempts: {
+    type: Number,
+    default: 0
+  },
+  accountLockExpires: {
+    type: Date
+  },
+  twoFactorSecret: {
+    type: String,
+    select: false
+  },
+  twoFactorEnabled: {
+    type: Boolean,
+    default: false
+  },
+  securityQuestions: [{
+    question: String,
+    answer: String
+  }],
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
 
-// Encrypt password using bcrypt
+// Encrypt password using bcrypt with enhanced security
 UserSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
     return next();
   }
 
-  const salt = await bcrypt.genSalt(12);
+  // Use configurable bcrypt rounds (minimum 12)
+  const rounds = Math.max(parseInt(process.env.BCRYPT_ROUNDS) || 12, 12);
+  const salt = await bcrypt.genSalt(rounds);
   this.password = await bcrypt.hash(this.password, salt);
+  
+  // Set password changed timestamp
+  this.passwordChangedAt = new Date();
+  
   next();
 });
 

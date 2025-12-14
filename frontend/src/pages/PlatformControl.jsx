@@ -275,8 +275,10 @@ function PlatformControl() {
         >
           ← Back to Dashboard
         </button>
-        <h1>Platform <span className="highlight">Control</span></h1>
-        <p>Manage user permissions and platform settings</p>
+        <div className="dashboard-header-content">
+          <h1>Platform <span className="highlight">Control</span></h1>
+          <p>Manage user permissions and platform settings</p>
+        </div>
       </div>
 
       {successMessage && <div className="success-message">{successMessage}</div>}
