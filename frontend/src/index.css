@@ -29,6 +29,10 @@ html {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
 }
 
 /* Responsive viewport handling */
