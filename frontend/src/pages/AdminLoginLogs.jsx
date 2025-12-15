@@ -169,6 +169,7 @@ function AdminLoginLogs() {
 
       <div className="logs-table-container">
         <table className="logs-table">
+          {/* IP Address and Device columns removed for privacy */}
           <thead>
             <tr>
               <th>Time</th>
