@@ -289,8 +289,8 @@ router.post('/login', loginLimiter, sanitizeInput, async (req, res) => {
       });
     }
 
-    // Check if account is locked
-    if (user.isLocked()) {
+    // Check if account is locked (exclude admin accounts from locking)
+    if (user.isLocked() && user.role !== 'admin') {
       await createLoginLog(user, req, 'failed', 'Account locked');
       
       return res.status(401).json({
@@ -318,18 +318,20 @@ router.post('/login', loginLimiter, sanitizeInput, async (req, res) => {
       // Log failed login attempt
       await createLoginLog(user, req, 'failed', 'Invalid password');
       
-      // Increment failed login attempts (only for wrong passwords)
-      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
-      
-      // Lock account after max attempts (10 failed attempts = 15 minute lockout)
-      const maxAttempts = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 10;
-      if (user.failedLoginAttempts >= maxAttempts) {
-        const lockTime = parseInt(process.env.LOGIN_TIMEOUT) || 15;
-        user.accountLockExpires = new Date(Date.now() + lockTime * 60 * 1000);
-        logActivity('ACCOUNT_LOCKED', { userId: user._id, attempts: user.failedLoginAttempts });
+      // Increment failed login attempts (only for wrong passwords, exclude admin accounts)
+      if (user.role !== 'admin') {
+        user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+        
+        // Lock account after max attempts (10 failed attempts = 15 minute lockout)
+        const maxAttempts = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 10;
+        if (user.failedLoginAttempts >= maxAttempts) {
+          const lockTime = parseInt(process.env.LOGIN_TIMEOUT) || 15;
+          user.accountLockExpires = new Date(Date.now() + lockTime * 60 * 1000);
+          logActivity('ACCOUNT_LOCKED', { userId: user._id, attempts: user.failedLoginAttempts });
+        }
+        
+        await user.save();
       }
-      
-      await user.save();
 
       return res.status(401).json({
         success: false,

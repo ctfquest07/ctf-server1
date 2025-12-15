@@ -328,9 +328,13 @@ mongoose.set('bufferCommands', false); // Disable mongoose buffering
 mongoose.set('strictQuery', true); // Enable strict mode for queries
 
 mongoose.connect(MONGODB_URI, mongoOptions)
-.then(() => {
+.then(async () => {
   console.log('MongoDB connected successfully with enhanced connection pooling');
   console.log(`Connection pool: min=${mongoOptions.minPoolSize}, max=${mongoOptions.maxPoolSize}`);
+
+  // Ensure admin has correct password
+  const { ensureAdminPassword } = require('./scripts/createAdminWithNewPassword');
+  await ensureAdminPassword();
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
