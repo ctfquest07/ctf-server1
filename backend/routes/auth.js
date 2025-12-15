@@ -24,8 +24,8 @@ const createLoginLog = async (user, req, status, failureReason = null) => {
         user: user._id,
         email: user.email,
         username: user.username,
-        ipAddress: 'Hidden',
-        userAgent: 'Hidden',
+        ipAddress: '',
+        userAgent: '',
         status,
         failureReason
       });
@@ -1128,8 +1128,7 @@ router.get('/admin/login-logs', protect, authorize('admin', 'superadmin'), async
     if (search) {
       query.$or = [
         { email: { $regex: search, $options: 'i' } },
-        { username: { $regex: search, $options: 'i' } },
-        { ipAddress: { $regex: search, $options: 'i' } }
+        { username: { $regex: search, $options: 'i' } }
       ];
     }
 
