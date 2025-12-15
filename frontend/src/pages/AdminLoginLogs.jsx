@@ -252,7 +252,7 @@ function AdminLoginLogs() {
                   )}
                 </td>
               </tr>
-            ))
+            ))}
           </tbody>
         </table>
       </div>
