@@ -84,7 +84,7 @@ function EditChallenge() {
     e.preventDefault();
 
     // Validation
-    if (!title || !description || !category || !difficulty || !points) {
+    if (!formData.title || !formData.description || !formData.category || !formData.difficulty || !formData.points) {
       setFormError('Please fill in all required fields');
       return;
     }
