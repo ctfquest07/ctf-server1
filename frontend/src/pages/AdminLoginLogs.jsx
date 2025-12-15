@@ -94,7 +94,17 @@ function AdminLoginLogs() {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString();
+    // Format date in Indian timezone
+    return new Date(dateString).toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
   };
 
   if (loading && logs.length === 0) {

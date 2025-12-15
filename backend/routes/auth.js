@@ -20,12 +20,18 @@ const createLoginLog = async (user, req, status, failureReason = null) => {
   try {
     // Only create log if user exists (has valid _id)
     if (user && user._id) {
+      // Create timestamp in Indian timezone (UTC+5:30)
+      const now = new Date();
+      const istOffset = 5.5 * 60 * 60 * 1000; // 5.5 hours in milliseconds
+      const istTime = new Date(now.getTime() + istOffset);
+      
       await LoginLog.create({
         user: user._id,
         email: user.email,
         username: user.username,
         ipAddress: '',
         userAgent: '',
+        loginTime: istTime,
         status,
         failureReason
       });
