@@ -18,6 +18,7 @@ function AdminLoginLogs() {
     status: '',
     search: ''
   });
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -30,6 +31,19 @@ function AdminLoginLogs() {
   useEffect(() => {
     fetchLogs();
   }, [page, filters, token]);
+
+  // Auto-refresh every 5 seconds
+  useEffect(() => {
+    let interval;
+    if (autoRefresh && token) {
+      interval = setInterval(() => {
+        fetchLogs();
+      }, 5000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [autoRefresh, token, page, filters]);
 
   const fetchLogs = async () => {
     if (!token) return;
@@ -68,20 +82,30 @@ function AdminLoginLogs() {
   };
 
   const clearOldLogs = async () => {
-    if (!window.confirm('Are you sure you want to delete login logs older than 30 days?')) {
+    const choice = window.confirm('Choose:\n\nOK = Clear logs older than 30 days\nCancel = Clear ALL logs\n\nClick OK for 30 days, Cancel for ALL');
+    
+    const confirmMessage = choice ? 
+      'Are you sure you want to delete login logs older than 30 days?' :
+      'Are you sure you want to delete ALL login logs? This cannot be undone!';
+    
+    if (!window.confirm(confirmMessage)) {
       return;
     }
 
     try {
-      await axios.delete('/api/auth/admin/login-logs?days=30', {
+      const url = choice ? 
+        '/api/auth/admin/login-logs?days=30' :
+        '/api/auth/admin/login-logs?all=true';
+        
+      const response = await axios.delete(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       fetchLogs();
-      alert('Old login logs cleared successfully');
+      alert(response.data.message || 'Login logs cleared successfully');
     } catch (err) {
       console.error('Error clearing logs:', err);
-      setError('Failed to clear old logs');
+      setError('Failed to clear logs');
     }
   };
 
@@ -155,6 +179,12 @@ function AdminLoginLogs() {
           <button onClick={fetchLogs} className="refresh-btn">
             Refresh
           </button>
+          <button 
+            onClick={() => setAutoRefresh(!autoRefresh)} 
+            className={`auto-refresh-btn ${autoRefresh ? 'active' : ''}`}
+          >
+            {autoRefresh ? '⏸️ Stop Auto-Refresh' : '▶️ Start Auto-Refresh'}
+          </button>
         </div>
       </div>
 
@@ -179,12 +209,13 @@ function AdminLoginLogs() {
 
       <div className="logs-table-container">
         <table className="logs-table">
-          {/* IP Address and Device columns removed for privacy */}
           <thead>
             <tr>
               <th>Time</th>
               <th>User</th>
               <th>Email</th>
+              <th>IP Address</th>
+              <th>User Agent</th>
               <th>Status</th>
               <th>Failure Reason</th>
             </tr>
@@ -204,6 +235,16 @@ function AdminLoginLogs() {
                   </div>
                 </td>
                 <td>{log.email}</td>
+                <td>
+                  <span className="ip-address" title={log.ipAddress}>
+                    {log.ipAddress || 'Unknown'}
+                  </span>
+                </td>
+                <td>
+                  <span className="user-agent" title={log.userAgent}>
+                    {log.userAgent ? log.userAgent.substring(0, 50) + (log.userAgent.length > 50 ? '...' : '') : 'Unknown'}
+                  </span>
+                </td>
                 <td>{getStatusBadge(log.status)}</td>
                 <td>
                   {log.failureReason && (
@@ -211,7 +252,7 @@ function AdminLoginLogs() {
                   )}
                 </td>
               </tr>
-            ))}
+            ))
           </tbody>
         </table>
       </div>

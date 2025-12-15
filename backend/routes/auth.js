@@ -15,26 +15,44 @@ const logActivity = (action, details = {}) => {
 };
 const crypto = require('crypto');
 
+// Helper function to get real IP address
+const getRealIP = (req) => {
+  return req.headers['x-forwarded-for'] || 
+         req.headers['x-real-ip'] || 
+         req.connection.remoteAddress || 
+         req.socket.remoteAddress ||
+         (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+         req.ip || 
+         'Unknown';
+};
+
 // Helper function to create login log
 const createLoginLog = async (user, req, status, failureReason = null) => {
   try {
     // Only create log if user exists (has valid _id)
     if (user && user._id) {
+      // Get real IP address and user agent
+      const realIP = getRealIP(req);
+      const userAgent = req.get('User-Agent') || 'Unknown';
+      
       // Create timestamp in Indian timezone (UTC+5:30)
       const now = new Date();
       const istOffset = 5.5 * 60 * 60 * 1000; // 5.5 hours in milliseconds
       const istTime = new Date(now.getTime() + istOffset);
       
-      await LoginLog.create({
+      const loginLog = await LoginLog.create({
         user: user._id,
         email: user.email,
         username: user.username,
-        ipAddress: '',
-        userAgent: '',
+        ipAddress: realIP,
+        userAgent: userAgent,
         loginTime: istTime,
         status,
         failureReason
       });
+      
+      console.log(`Login log created: ${user.username} - ${status} - IP: ${realIP}`);
+      return loginLog;
     }
   } catch (error) {
     console.error('Error creating login log:', error);
@@ -1231,17 +1249,29 @@ router.get('/admin/login-logs/:userId', protect, authorize('admin', 'superadmin'
 // @access  Private/Admin
 router.delete('/admin/login-logs', protect, authorize('admin', 'superadmin'), async (req, res) => {
   try {
-    const { days = 30 } = req.query;
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
+    const { days = 30, all } = req.query;
+    
+    let result;
+    if (all === 'true') {
+      // Delete all login logs
+      result = await LoginLog.deleteMany({});
+    } else {
+      // Delete logs older than specified days
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
+      
+      result = await LoginLog.deleteMany({
+        loginTime: { $lt: cutoffDate }
+      });
+    }
 
-    const result = await LoginLog.deleteMany({
-      loginTime: { $lt: cutoffDate }
-    });
+    const message = all === 'true' ? 
+      `Deleted all ${result.deletedCount} login logs` :
+      `Deleted ${result.deletedCount} login logs older than ${days} days`;
 
     res.json({
       success: true,
-      message: `Deleted ${result.deletedCount} login logs older than ${days} days`,
+      message,
       deletedCount: result.deletedCount
     });
   } catch (error) {
