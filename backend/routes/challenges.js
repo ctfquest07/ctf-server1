@@ -10,10 +10,64 @@ const { sanitizeInput, validateInput, securityHeaders } = require('../middleware
 const requestIp = require('request-ip');
 const UAParser = require('ua-parser-js');
 
+// In-memory store for flag submission attempts
+const flagSubmissionAttempts = new Map();
+
 // Real-time logging function
 const logActivity = (action, details = {}) => {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] CHALLENGE: ${action}`, details);
+};
+
+// Rate limiting for flag submissions
+const checkFlagSubmissionRate = (userId, challengeId) => {
+  const key = `${userId}:${challengeId}`;
+  const now = Date.now();
+  const maxAttempts = parseInt(process.env.FLAG_SUBMIT_MAX_ATTEMPTS) || 5;
+  const windowMs = (parseInt(process.env.FLAG_SUBMIT_WINDOW) || 60) * 1000;
+  const cooldownMs = (parseInt(process.env.FLAG_SUBMIT_COOLDOWN) || 30) * 1000;
+  
+  if (!flagSubmissionAttempts.has(key)) {
+    flagSubmissionAttempts.set(key, { attempts: [], lastFailTime: null });
+  }
+  
+  const userAttempts = flagSubmissionAttempts.get(key);
+  
+  // Check if user is in cooldown period
+  if (userAttempts.lastFailTime && (now - userAttempts.lastFailTime) < cooldownMs) {
+    const remainingTime = Math.ceil((cooldownMs - (now - userAttempts.lastFailTime)) / 1000);
+    return { allowed: false, remainingTime };
+  }
+  
+  // Clean old attempts outside the window
+  userAttempts.attempts = userAttempts.attempts.filter(time => (now - time) < windowMs);
+  
+  // Check if user has exceeded max attempts
+  if (userAttempts.attempts.length >= maxAttempts) {
+    userAttempts.lastFailTime = now;
+    return { allowed: false, remainingTime: Math.ceil(cooldownMs / 1000) };
+  }
+  
+  return { allowed: true };
+};
+
+// Record failed flag submission
+const recordFailedSubmission = (userId, challengeId) => {
+  const key = `${userId}:${challengeId}`;
+  const now = Date.now();
+  
+  if (!flagSubmissionAttempts.has(key)) {
+    flagSubmissionAttempts.set(key, { attempts: [], lastFailTime: null });
+  }
+  
+  const userAttempts = flagSubmissionAttempts.get(key);
+  userAttempts.attempts.push(now);
+};
+
+// Clear attempts on successful submission
+const clearSubmissionAttempts = (userId, challengeId) => {
+  const key = `${userId}:${challengeId}`;
+  flagSubmissionAttempts.delete(key);
 };
 
 // @route   GET /api/challenges
@@ -180,6 +234,16 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
       });
     }
 
+    // Check rate limiting for flag submissions
+    const rateCheck = checkFlagSubmissionRate(req.user.id, challenge._id);
+    if (!rateCheck.allowed) {
+      return res.status(429).json({
+        success: false,
+        message: `Too many attempts. Please wait ${rateCheck.remainingTime} seconds before trying again.`,
+        remainingTime: rateCheck.remainingTime
+      });
+    }
+
     // Get IP and User Agent for tracking
     const clientIp = requestIp.getClientIp(req);
     const userAgent = req.get('User-Agent') || 'Unknown';
@@ -199,11 +263,17 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
     });
     
     if (!isCorrect) {
+      // Record failed submission for rate limiting
+      recordFailedSubmission(req.user.id, challenge._id);
+      
       return res.status(400).json({
         success: false,
         message: 'Incorrect flag'
       });
     }
+
+    // Clear rate limiting attempts on successful submission
+    clearSubmissionAttempts(req.user.id, challenge._id);
 
     // Update user with solve time
     await User.findByIdAndUpdate(
