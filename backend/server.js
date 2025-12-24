@@ -45,7 +45,7 @@ const analyticsRoutes = require('./routes/analytics');
 
 // Initialize express app
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 
 app.use(morgan('dev'));
 
@@ -98,9 +98,10 @@ app.use(session({
   secret: process.env.SESSION_SECRET,
   name: 'ctfquest.sid',
   resave: false,
+  proxy: true,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: false,
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     sameSite: 'strict'
@@ -318,7 +319,7 @@ app.use((err, req, res, next) => {
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Rejection:', err);
   // Close server & exit process
-  process.exit(1);
+  //process.exit(1);
 });
 
 // Handle uncaught exceptions
@@ -375,5 +376,5 @@ mongoose.connect(MONGODB_URI, mongoOptions)
 })
 .catch(err => {
   console.error('MongoDB connection error:', err);
-  process.exit(1);
+  //process.exit(1);
 });

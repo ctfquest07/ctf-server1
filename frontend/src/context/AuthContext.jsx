@@ -3,24 +3,20 @@ import axios from 'axios';
 
 const AuthContext = createContext();
 
-// Get the current hostname for API URL
+
 const getApiUrl = () => {
-  // Use environment variable if available
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-
-  // In development, use localhost
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:10000';
-  }
-
-  // In production, use the same hostname but with the API port
-  return `http://${window.location.hostname}:10000`;
+  // In production, use the public domain (ctf.sece.ac.in)
+  return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? 'http://localhost:10000' 
+    : 'http://ctf.sece.ac.in:10000';  // Change this line
 };
 
 // Configure axios defaults
 axios.defaults.baseURL = getApiUrl();
+
 axios.defaults.withCredentials = true;  // Enable credentials
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
