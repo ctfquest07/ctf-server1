@@ -16,9 +16,9 @@ function ensureSubscribed() {
     if (!isSubscribed) {
         subscriber.subscribe('ctf:submissions:live', (err) => {
             if (err) {
-                console.error('??? Failed to subscribe to submissions channel:', err);
+                console.error('[Redis] Failed to subscribe to submissions channel:', err);
             } else {
-                console.log('??? Subscribed to ctf:submissions:live');
+                console.log('[Redis] Subscribed to ctf:submissions:live');
                 isSubscribed = true;
             }
         });
@@ -109,14 +109,14 @@ router.get('/', async (req, res) => {
     // Attach listener for this connection
     subscriber.on('message', messageHandler);
     activeConnections++;
-    console.log(\`Active admin connections: \${activeConnections}\`);
+    console.log(`Active admin connections: ${activeConnections}`);
 
     // 6. Cleanup on client disconnect
     req.on('close', () => {
         clearInterval(heartbeatInterval);
         subscriber.removeListener('message', messageHandler);
         activeConnections--;
-        console.log(\`Admin disconnected. Active connections: \${activeConnections}\`);
+        console.log(`Admin disconnected. Active connections: ${activeConnections}`);
         
         // If no more admins are listening, we could optionally unsubscribe
         // but keeping subscription active is fine (low overhead)
