@@ -17,9 +17,9 @@ const logActivity = (action, details = {}) => {
   console.log(`[${timestamp}] AUTH: ${action}`, details);
 };
 const crypto = require('crypto');
-const Redis = require('ioredis');
-// Initialize Redis for Leaderboard Caching
-const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+const { getRedisClient } = require('../utils/redis');
+// Use centralized Redis client for leaderboard caching
+const redisClient = getRedisClient();
 
 // Helper function to get real IP address using request-ip
 const getRealIP = (req) => {
@@ -566,39 +566,61 @@ router.get('/leaderboard', protect, async (req, res) => {
 
     if (type === 'teams') {
       const Team = require('../models/Team');
-      let teams = await Team.find()
-        .select('name solvedChallenges members')
-        .populate('members', 'username email points showInLeaderboard lastSolveTime')
-        .lean();
+      
+      // Use MongoDB aggregation pipeline for performance (critical for 500+ users)
+      const pipeline = [
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'members',
+            foreignField: '_id',
+            as: 'memberDetails'
+          }
+        },
+        {
+          $addFields: {
+            totalPoints: { $sum: '$memberDetails.points' },
+            lastSolveTime: { $max: '$memberDetails.lastSolveTime' },
+            visibleMembers: {
+              $filter: {
+                input: '$memberDetails',
+                as: 'member',
+                cond: { $ne: ['$$member.showInLeaderboard', false] }
+              }
+            }
+          }
+        }
+      ];
 
-      // If not admin, filter teams to only show those with visible members
+      // Filter by role - only show teams with visible members for non-admins
       if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
-        teams = teams.filter(team =>
-          team.members.some(member => member.showInLeaderboard !== false)
-        );
+        pipeline.push({
+          $match: {
+            $expr: { $gt: [{ $size: '$visibleMembers' }, 0] }
+          }
+        });
       }
 
-      // Calculate total points and most recent solve time for each team
-      const teamsWithPoints = teams.map(team => {
-        const totalPoints = team.members.reduce((total, member) => total + (member.points || 0), 0);
-        const mostRecentSolve = team.members.reduce((latest, member) => {
-          const memberSolveTime = member.lastSolveTime ? new Date(member.lastSolveTime) : new Date(0);
-          return memberSolveTime > latest ? memberSolveTime : latest;
-        }, new Date(0));
-
-        return {
-          ...team,
-          points: totalPoints,
-          lastSolveTime: mostRecentSolve
-        };
-      }).sort((a, b) => {
-        // Primary sort: points (descending)
-        if (b.points !== a.points) {
-          return b.points - a.points;
+      // Sort and limit
+      pipeline.push(
+        { $sort: { totalPoints: -1, lastSolveTime: 1, name: 1 } },
+        { $limit: 20 },
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+            description: 1,
+            points: '$totalPoints',
+            lastSolveTime: 1,
+            members: '$memberDetails',
+            solvedChallenges: 1,
+            createdAt: 1,
+            createdBy: 1
+          }
         }
-        // Secondary sort: most recent solve time (descending)
-        return new Date(b.lastSolveTime) - new Date(a.lastSolveTime);
-      }).slice(0, 20);
+      );
+
+      const teamsWithPoints = await Team.aggregate(pipeline);
 
       // Cache for 30 seconds
       await redisClient.setex(cacheKey, 30, JSON.stringify(teamsWithPoints));
@@ -670,9 +692,11 @@ router.get('/users', protect, authorize('admin', 'superadmin'), async (req, res)
     // Build search query
     let query = {};
     if (search) {
+      // Sanitize regex input to prevent ReDoS attacks
+      const sanitized = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').substring(0, 50);
       query.$or = [
-        { username: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { username: { $regex: sanitized, $options: 'i' } },
+        { email: { $regex: sanitized, $options: 'i' } }
       ];
     }
 
@@ -725,7 +749,7 @@ router.get('/users', protect, authorize('admin', 'superadmin'), async (req, res)
 router.get('/users/:id', protect, async (req, res) => {
   try {
     // Allow users to view their own profile or admins to view any profile
-    const isOwnProfile = req.user._id === req.params.id;
+    const isOwnProfile = req.user._id.toString() === req.params.id; // Fixed: added .toString()
     const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
 
     if (!isOwnProfile && !isAdmin) {

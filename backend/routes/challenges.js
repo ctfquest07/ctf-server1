@@ -11,9 +11,9 @@ const requestIp = require('request-ip');
 const UAParser = require('ua-parser-js');
 const crypto = require('crypto');
 
-const Redis = require('ioredis');
-// Initialize Redis for Challenge Rate Limiting
-const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+const { getRedisClient } = require('../utils/redis');
+// Use centralized Redis for Challenge Rate Limiting
+const redisClient = getRedisClient();
 
 // Real-time logging function
 const logActivity = (action, details = {}) => {
@@ -277,16 +277,27 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
     const isCorrect = crypto.timingSafeEqual(paddedSubmitted, paddedExpected) &&
       submittedFlag.length === expectedFlag.length;
 
-    // Create submission record (both success and failure)
-    await Submission.create({
-      user: req.user._id,
-      challenge: challenge._id,
-      submittedFlag: submittedFlag,
-      isCorrect: isCorrect,
-      points: isCorrect ? challenge.points : 0,
-      ipAddress: clientIp,
-      userAgent: userAgent
-    });
+    // Create submission record (both success and failure) - unique index prevents duplicates
+    try {
+      await Submission.create({
+        user: req.user._id,
+        challenge: challenge._id,
+        submittedFlag: submittedFlag,
+        isCorrect: isCorrect,
+        points: isCorrect ? challenge.points : 0,
+        ipAddress: clientIp,
+        userAgent: userAgent
+      });
+    } catch (err) {
+      // If duplicate key error (11000), user already submitted this exact flag
+      if (err.code === 11000) {
+        return res.status(400).json({
+          success: false,
+          message: 'You have already solved this challenge'
+        });
+      }
+      throw err; // Re-throw other errors
+    }
 
     if (!isCorrect) {
       // Record failed submission for rate limiting
@@ -333,6 +344,32 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
       challengeTitle: challenge.title,
       points: challenge.points
     });
+
+    // Publish real-time submission event to admin monitoring
+    // CRITICAL: This must NEVER block player submissions
+    try {
+      const submissionEvent = {
+        type: 'submission',
+        user: req.user.username || 'Unknown',
+        email: req.user.email,
+        challenge: challenge.title,
+        challengeId: challenge._id.toString(),
+        points: challenge.points,
+        submittedAt: new Date().toISOString(),
+        ip: clientIp
+        // NOTE: Actual flag value is NOT included for security
+      };
+
+      // Fire and forget - don't await, catch errors to prevent blocking
+      redisClient.publish('ctf:submissions:live', JSON.stringify(submissionEvent))
+        .catch(err => {
+          // Log error but don't affect player submission
+          console.error('[Non-critical] Redis publish error:', err.message);
+        });
+    } catch (e) {
+      // Catch any errors - monitoring failure must not affect players
+      console.error('[Non-critical] Error preparing submission event:', e.message);
+    }
 
     res.json({
       success: true,

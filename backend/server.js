@@ -6,14 +6,13 @@ const fs = require('fs');
 const multer = require('multer');
 const cors = require('cors');
 const compression = require('compression');
-const session = require('express-session');
-const crypto = require('crypto');
 const requestIp = require('request-ip');
 const morgan = require('morgan')
 
+// Centralized Redis client (singleton pattern for 500+ users)
+const { getRedisClient } = require('./utils/redis');
+
 // Security middleware imports
-const { RedisStore } = require('connect-redis');
-const Redis = require('ioredis');
 const {
   strictLoginLimiter,
   apiLimiter,
@@ -44,6 +43,7 @@ const tutorialRoutes = require('./routes/tutorials');
 const teamRoutes = require('./routes/teams');
 const noticeRoutes = require('./routes/notice');
 const analyticsRoutes = require('./routes/analytics');
+const realtimeRoutes = require('./routes/realtime');
 
 // Initialize express app
 const app = express();
@@ -95,26 +95,11 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Initialize Redis Client
-const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-redisClient.on('error', (err) => console.log('Redis Client Error', err));
-redisClient.on('connect', () => console.log('Redis Client Connected'));
+// Initialize centralized Redis client (singleton for 500+ users)
+const redisClient = getRedisClient();
 
-// Session configuration with Redis Store
-app.use(session({
-  store: new RedisStore({ client: redisClient, prefix: 'ctf:sess:' }),
-  secret: process.env.SESSION_SECRET,
-  name: 'ctfquest.sid',
-  resave: false,
-  saveUninitialized: false, // Don't create sessions for unauthenticated users
-  proxy: true, // Trusted proxy is already set
-  cookie: {
-    secure: false, // process.env.NODE_ENV === 'production', // Relaxed for HTTP deployment
-    httpOnly: true, // Prevents XSS theft
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax' // Lax is better for UX traversing links
-  }
-}));
+// Session system removed - using JWT only for better scalability
+// This saves Redis memory and prevents session/JWT confusion
 
 // Performance middleware
 app.use(compression({
@@ -231,6 +216,7 @@ app.use('/api/tutorials', tutorialRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/notices', noticeRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/r-submission', realtimeRoutes);
 
 // Enhanced security headers middleware
 // Enhanced security headers middleware - Relaxed for UX
@@ -245,9 +231,9 @@ app.use((req, res, next) => {
   if (process.env.NODE_ENV === 'production') {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
-  // Relaxed Content Security Policy for CTF environment
-  // Allows inline scripts/styles which are common in challenges and rapid dev
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' https: data:; worker-src 'self' blob:;");
+  // Secure Content Security Policy - XSS protection for production
+  // Removed unsafe-inline and unsafe-eval to prevent XSS attacks
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https: blob:; font-src 'self' https: data:; worker-src 'self' blob:; connect-src 'self';");
   next();
 });
 
@@ -345,8 +331,8 @@ const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb
 // Enhanced MongoDB connection options for 500+ concurrent users support
 const mongoOptions = {
   // Connection pool settings for high concurrency (500+ users)
-  maxPoolSize: parseInt(process.env.MONGO_MAX_POOL_SIZE) || 100, // Maximum number of connections
-  minPoolSize: parseInt(process.env.MONGO_MIN_POOL_SIZE) || 20,  // Minimum number of connections
+  maxPoolSize: parseInt(process.env.MONGO_MAX_POOL_SIZE) || 500, // Increased for production load
+  minPoolSize: parseInt(process.env.MONGO_MIN_POOL_SIZE) || 50,  // Increased for production load
   maxIdleTimeMS: parseInt(process.env.MONGO_MAX_IDLE_TIME) || 60000, // Close connections after 60 seconds of inactivity
   serverSelectionTimeoutMS: parseInt(process.env.MONGO_SERVER_SELECTION_TIMEOUT) || 10000, // How long to try selecting a server
   socketTimeoutMS: parseInt(process.env.MONGO_SOCKET_TIMEOUT) || 60000, // How long a send or receive on a socket can take before timing out

@@ -1,0 +1,126 @@
+const express = require('express');
+const router = express.Router();
+const jwt = require('jsonwebtoken');
+const { getRedisSubscriber } = require('../utils/redis');
+const User = require('../models/User');
+
+// Use centralized Redis subscriber for pub/sub (singleton pattern)
+const subscriber = getRedisSubscriber();
+
+// Track active connections to avoid duplicate subscriptions
+let activeConnections = 0;
+let isSubscribed = false;
+
+// Subscribe to channel once when first admin connects
+function ensureSubscribed() {
+    if (!isSubscribed) {
+        subscriber.subscribe('ctf:submissions:live', (err) => {
+            if (err) {
+                console.error('??? Failed to subscribe to submissions channel:', err);
+            } else {
+                console.log('??? Subscribed to ctf:submissions:live');
+                isSubscribed = true;
+            }
+        });
+    }
+}
+
+/**
+ * Admin Real-Time Submission Monitoring Endpoint
+ * Uses Server-Sent Events (SSE) for real-time updates
+ * 
+ * @route GET /r-submission?token=<jwt>
+ * @access Admin only
+ */
+router.get('/', async (req, res) => {
+    // 1. Authentication (via query param since EventSource doesn't support headers)
+    const token = req.query.token;
+
+    if (!token) {
+        return res.status(401).json({ 
+            success: false,
+            message: 'No token provided. Include ?token=<your-jwt> in URL' 
+        });
+    }
+
+    try {
+        // Verify JWT and check admin role
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id);
+
+        if (!user) {
+            return res.status(401).json({ 
+                success: false,
+                message: 'User not found' 
+            });
+        }
+
+        if (user.role !== 'admin' && user.role !== 'superadmin') {
+            return res.status(403).json({ 
+                success: false,
+                message: 'Access denied. Admin role required.' 
+            });
+        }
+
+        console.log(\`??? Admin \${user.username} connected to live submission feed\`);
+    } catch (err) {
+        return res.status(401).json({ 
+            success: false,
+            message: 'Invalid or expired token' 
+        });
+    }
+
+    // 2. Setup SSE Headers
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no', // Important for Nginx
+        'Access-Control-Allow-Origin': '*', // Allow CORS for admin dashboard
+    });
+
+    // 3. Send initial connection message
+    res.write(\`data: \${JSON.stringify({ 
+        type: 'connected', 
+        message: 'Connected to live CTF submission stream',
+        timestamp: new Date().toISOString()
+    })}\\n\\n\`);
+
+    // Keep connection alive with periodic heartbeat
+    const heartbeatInterval = setInterval(() => {
+        res.write(\`:heartbeat \${Date.now()}\\n\\n\`);
+    }, 30000); // Every 30 seconds
+
+    // 4. Message Handler for this specific connection
+    const messageHandler = (channel, message) => {
+        if (channel === 'ctf:submissions:live') {
+            try {
+                // Forward message to admin (already formatted as JSON by publisher)
+                res.write(\`data: \${message}\\n\\n\`);
+            } catch (err) {
+                console.error('Error writing SSE message:', err);
+            }
+        }
+    };
+
+    // 5. Subscribe to Redis channel (only once globally)
+    ensureSubscribed();
+    
+    // Attach listener for this connection
+    subscriber.on('message', messageHandler);
+    activeConnections++;
+    console.log(\`Active admin connections: \${activeConnections}\`);
+
+    // 6. Cleanup on client disconnect
+    req.on('close', () => {
+        clearInterval(heartbeatInterval);
+        subscriber.removeListener('message', messageHandler);
+        activeConnections--;
+        console.log(\`Admin disconnected. Active connections: \${activeConnections}\`);
+        
+        // If no more admins are listening, we could optionally unsubscribe
+        // but keeping subscription active is fine (low overhead)
+    });
+});
+
+module.exports = router;

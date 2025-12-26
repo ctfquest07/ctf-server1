@@ -15,7 +15,8 @@
     "health": "curl http://localhost:5000/api/health",
     "startup-check": "node scripts/startup.js",
     "start:safe": "npm run startup-check && npm start",
-    "dev:safe": "npm run startup-check && npm run dev"
+    "dev:safe": "npm run startup-check && npm run dev",
+    "prepare-production": "node scripts/prepare-production.js"
   },
   "keywords": [],
   "author": "",
@@ -52,6 +53,7 @@
     "xss-clean": "^0.1.1"
   },
   "devDependencies": {
+    "eventsource": "^4.1.0",
     "morgan": "^1.10.1",
     "nodemon": "^3.1.11"
   },

@@ -1,12 +1,9 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const Redis = require('ioredis');
-// Initialize Redis for Auth Caching
-const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+const { getRedisClient } = require('../utils/redis');
+const redisClient = getRedisClient();
 const CACHE_TTL = 300; // 5 minutes in seconds
-
-// No manual interval cleanup needed for Redis (uses TTL)
 
 // Protect routes
 exports.protect = async (req, res, next) => {

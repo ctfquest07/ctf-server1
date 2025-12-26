@@ -6,10 +6,10 @@ const xss = require('xss');
 const mongoSanitize = require('express-mongo-sanitize');
 
 const RedisStore = require('rate-limit-redis').default;
-const Redis = require('ioredis');
+const { getRedisClient } = require('../utils/redis');
 
-// Initialize Redis Client for Rate Limiting
-const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+// Use centralized Redis client for rate limiting
+const redisClient = getRedisClient();
 
 // Relaxed rate limiting with Redis Store
 const createAdvancedRateLimit = (windowMs, max, message, skipSuccessfulRequests = false) => {
