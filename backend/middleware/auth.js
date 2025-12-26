@@ -57,18 +57,16 @@ exports.protect = async (req, res, next) => {
       try {
         const cachedStr = await redisClient.get(cacheKey);
         if (cachedStr) {
-          user = new User(JSON.parse(cachedStr));
-          // Re-hydrate necessary properties if needed (like check passwordChangedAt)
-          // For mongoose models, passing object to constructor usually works for read-only access
-          // but methods won't work unless we findById. For protection middleware,
-          // we mostly need role/id/passwordChangedAt.
-
-          // However, JSON.parse result doesn't have model methods like `matchPassword`
-          // Middleware only reads properties, so plain object is faster and safer for cache
-          user = JSON.parse(cachedStr);
-
-          // Restore Date objects
-          if (user.passwordChangedAt) user.passwordChangedAt = new Date(user.passwordChangedAt);
+          const cachedData = JSON.parse(cachedStr);
+          // Restore Date objects for password check
+          if (cachedData.passwordChangedAt) {
+            cachedData.passwordChangedAt = new Date(cachedData.passwordChangedAt);
+          }
+          // Ensure _id is always a string for consistency
+          if (cachedData._id && typeof cachedData._id === 'object') {
+            cachedData._id = cachedData._id.toString();
+          }
+          user = cachedData;
         }
       } catch (e) {
         console.warn('Redis cache error:', e);
@@ -88,11 +86,13 @@ exports.protect = async (req, res, next) => {
         });
       }
 
-      user = dbUser; // Mongoose document
+      // Convert to plain object with _id as string for consistency
+      const userObj = dbUser.toObject();
+      userObj._id = userObj._id.toString();
+      user = userObj;
 
       // Cache the user data
-      // Store as plain JSON
-      await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(dbUser));
+      await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(userObj));
     }
 
     // Check if user's password was changed after the token was issued

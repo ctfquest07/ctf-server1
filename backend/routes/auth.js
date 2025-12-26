@@ -489,7 +489,15 @@ router.post('/resetpassword/:resettoken', async (req, res) => {
 // @desc    Get current logged in user
 // @access  Private
 router.get('/me', protect, async (req, res) => {
+  // Prevent HTTP caching to avoid 304 responses
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+
   try {
+    // Use req.user._id directly (now always a string from middleware)
     const user = await User.findById(req.user._id).populate('team');
 
     if (user.isBlocked) {
