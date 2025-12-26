@@ -42,20 +42,20 @@ const createAdvancedRateLimit = (windowMs, max, message, skipSuccessfulRequests 
 // Relaxed limits for UX
 const strictLoginLimiter = createAdvancedRateLimit(
   15 * 60 * 1000, // 15 minutes
-  20, // INCREASED from 3 to 20 for better UX
+  100, // Relaxed to 100 for heavy competition traffic
   'Too many login attempts. Please wait a moment.',
   false
 );
 
 const apiLimiter = createAdvancedRateLimit(
   15 * 60 * 1000,
-  1000, // DRAMATICALLY INCREASED for 500+ users / NAT
+  5000, // Very high limit for shared IPs (NAT)
   'API rate limit exceeded.'
 );
 
 const challengeSubmitLimiter = createAdvancedRateLimit(
   60 * 1000,
-  20, // Relaxed from 5 to 20 per minute
+  100, // Effectively allowing rapid guessing manually
   'Please slow down your submissions.'
 );
 
