@@ -1,19 +1,12 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Cache for user data to reduce database queries
-const userCache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const Redis = require('ioredis');
+// Initialize Redis for Auth Caching
+const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+const CACHE_TTL = 300; // 5 minutes in seconds
 
-// Clear expired cache entries periodically
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, value] of userCache.entries()) {
-    if (now - value.timestamp > CACHE_TTL) {
-      userCache.delete(key);
-    }
-  }
-}, 60 * 1000); // Clean every minute
+// No manual interval cleanup needed for Redis (uses TTL)
 
 // Protect routes
 exports.protect = async (req, res, next) => {
@@ -60,31 +53,49 @@ exports.protect = async (req, res, next) => {
     }
 
     // Check cache first to reduce database load
-    const cacheKey = `user_${decoded.id}`;
-    const cachedUser = userCache.get(cacheKey);
+    const cacheKey = `user:${decoded.id}`;
 
     let user;
-    if (cachedUser && (now - cachedUser.timestamp < CACHE_TTL) && !newTokenGenerated) {
-      // Use cached user data
-      user = cachedUser.data;
-    } else {
-      // Get user from database
-      user = await User.findById(decoded.id).select('-password');
+    if (!newTokenGenerated) {
+      try {
+        const cachedStr = await redisClient.get(cacheKey);
+        if (cachedStr) {
+          user = new User(JSON.parse(cachedStr));
+          // Re-hydrate necessary properties if needed (like check passwordChangedAt)
+          // For mongoose models, passing object to constructor usually works for read-only access
+          // but methods won't work unless we findById. For protection middleware,
+          // we mostly need role/id/passwordChangedAt.
 
-      if (!user) {
+          // However, JSON.parse result doesn't have model methods like `matchPassword`
+          // Middleware only reads properties, so plain object is faster and safer for cache
+          user = JSON.parse(cachedStr);
+
+          // Restore Date objects
+          if (user.passwordChangedAt) user.passwordChangedAt = new Date(user.passwordChangedAt);
+        }
+      } catch (e) {
+        console.warn('Redis cache error:', e);
+      }
+    }
+
+    if (!user) {
+      // Get user from database
+      const dbUser = await User.findById(decoded.id).select('-password');
+
+      if (!dbUser) {
         // Remove from cache if user no longer exists
-        userCache.delete(cacheKey);
+        await redisClient.del(cacheKey);
         return res.status(401).json({
           success: false,
           message: 'User no longer exists'
         });
       }
 
+      user = dbUser; // Mongoose document
+
       // Cache the user data
-      userCache.set(cacheKey, {
-        data: user,
-        timestamp: now
-      });
+      // Store as plain JSON
+      await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(dbUser));
     }
 
     // Check if user's password was changed after the token was issued

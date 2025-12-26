@@ -11,8 +11,9 @@ const requestIp = require('request-ip');
 const UAParser = require('ua-parser-js');
 const crypto = require('crypto');
 
-// In-memory store for flag submission attempts
-const flagSubmissionAttempts = new Map();
+const Redis = require('ioredis');
+// Initialize Redis for Challenge Rate Limiting
+const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 
 // Real-time logging function
 const logActivity = (action, details = {}) => {
@@ -20,55 +21,66 @@ const logActivity = (action, details = {}) => {
   console.log(`[${timestamp}] CHALLENGE: ${action}`, details);
 };
 
-// Rate limiting for flag submissions
-const checkFlagSubmissionRate = (userId, challengeId) => {
-  const key = `${userId}:${challengeId}`;
-  const now = Date.now();
+// Redis-based Rate limiting for flag submissions
+const checkFlagSubmissionRate = async (userId, challengeId) => {
+  const key = `rate:flag:${userId}:${challengeId}`;
   const maxAttempts = parseInt(process.env.FLAG_SUBMIT_MAX_ATTEMPTS) || 5;
-  const windowMs = (parseInt(process.env.FLAG_SUBMIT_WINDOW) || 60) * 1000;
-  const cooldownMs = (parseInt(process.env.FLAG_SUBMIT_COOLDOWN) || 30) * 1000;
-  
-  if (!flagSubmissionAttempts.has(key)) {
-    flagSubmissionAttempts.set(key, { attempts: [], lastFailTime: null });
+  const windowSeconds = parseInt(process.env.FLAG_SUBMIT_WINDOW) || 60;
+  const cooldownSeconds = parseInt(process.env.FLAG_SUBMIT_COOLDOWN) || 30;
+
+  // Get attempts from Redis
+  // We store attempts as a list of timestamps
+  const attempts = await redisClient.lrange(key, 0, -1);
+  const now = Date.now();
+
+  // Check if user is in cooldown (blocked)
+  const blockedKey = `rate:blocked:${userId}:${challengeId}`;
+  const isBlocked = await redisClient.get(blockedKey);
+
+  if (isBlocked) {
+    const ttl = await redisClient.ttl(blockedKey);
+    return { allowed: false, remainingTime: ttl > 0 ? ttl : cooldownSeconds };
   }
-  
-  const userAttempts = flagSubmissionAttempts.get(key);
-  
-  // Check if user is in cooldown period
-  if (userAttempts.lastFailTime && (now - userAttempts.lastFailTime) < cooldownMs) {
-    const remainingTime = Math.ceil((cooldownMs - (now - userAttempts.lastFailTime)) / 1000);
-    return { allowed: false, remainingTime };
+
+  // Filter old attempts (older than window)
+  const validAttempts = attempts.filter(time => (now - parseInt(time)) < (windowSeconds * 1000));
+
+  // If we filtered out attempts, update the list asynchronously
+  if (validAttempts.length < attempts.length) {
+    await redisClient.del(key);
+    if (validAttempts.length > 0) {
+      await redisClient.rpush(key, ...validAttempts);
+      await redisClient.expire(key, windowSeconds);
+    }
   }
-  
-  // Clean old attempts outside the window
-  userAttempts.attempts = userAttempts.attempts.filter(time => (now - time) < windowMs);
-  
-  // Check if user has exceeded max attempts
-  if (userAttempts.attempts.length >= maxAttempts) {
-    userAttempts.lastFailTime = now;
-    return { allowed: false, remainingTime: Math.ceil(cooldownMs / 1000) };
+
+  // Check limit
+  if (validAttempts.length >= maxAttempts) {
+    // Block user
+    await redisClient.setex(blockedKey, cooldownSeconds, 'blocked');
+    return { allowed: false, remainingTime: cooldownSeconds };
   }
-  
+
   return { allowed: true };
 };
 
 // Record failed flag submission
-const recordFailedSubmission = (userId, challengeId) => {
-  const key = `${userId}:${challengeId}`;
+const recordFailedSubmission = async (userId, challengeId) => {
+  const key = `rate:flag:${userId}:${challengeId}`;
   const now = Date.now();
-  
-  if (!flagSubmissionAttempts.has(key)) {
-    flagSubmissionAttempts.set(key, { attempts: [], lastFailTime: null });
-  }
-  
-  const userAttempts = flagSubmissionAttempts.get(key);
-  userAttempts.attempts.push(now);
+  const windowSeconds = parseInt(process.env.FLAG_SUBMIT_WINDOW) || 60;
+
+  await redisClient.rpush(key, now);
+  await redisClient.expire(key, windowSeconds);
 };
 
 // Clear attempts on successful submission
-const clearSubmissionAttempts = (userId, challengeId) => {
-  const key = `${userId}:${challengeId}`;
-  flagSubmissionAttempts.delete(key);
+const clearSubmissionAttempts = async (userId, challengeId) => {
+  const key = `rate:flag:${userId}:${challengeId}`;
+  const blockedKey = `rate:blocked:${userId}:${challengeId}`;
+
+  await redisClient.del(key);
+  await redisClient.del(blockedKey);
 };
 
 // @route   GET /api/challenges
@@ -236,7 +248,7 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
     }
 
     // Check rate limiting for flag submissions
-    const rateCheck = checkFlagSubmissionRate(req.user.id, challenge._id);
+    const rateCheck = await checkFlagSubmissionRate(req.user.id, challenge._id);
     if (!rateCheck.allowed) {
       return res.status(429).json({
         success: false,
@@ -248,23 +260,23 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
     // Get IP and User Agent for tracking
     const clientIp = requestIp.getClientIp(req);
     const userAgent = req.get('User-Agent') || 'Unknown';
-    
+
     // Check flag using constant-time comparison to prevent timing attacks
     const expectedFlag = challenge.flag.trim();
     const submittedBuffer = Buffer.from(submittedFlag, 'utf8');
     const expectedBuffer = Buffer.from(expectedFlag, 'utf8');
-    
+
     // Ensure buffers are same length to prevent timing attacks
     const maxLength = Math.max(submittedBuffer.length, expectedBuffer.length);
     const paddedSubmitted = Buffer.alloc(maxLength);
     const paddedExpected = Buffer.alloc(maxLength);
-    
+
     submittedBuffer.copy(paddedSubmitted);
     expectedBuffer.copy(paddedExpected);
-    
-    const isCorrect = crypto.timingSafeEqual(paddedSubmitted, paddedExpected) && 
-                     submittedFlag.length === expectedFlag.length;
-    
+
+    const isCorrect = crypto.timingSafeEqual(paddedSubmitted, paddedExpected) &&
+      submittedFlag.length === expectedFlag.length;
+
     // Create submission record (both success and failure)
     await Submission.create({
       user: req.user.id,
@@ -275,11 +287,11 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
       ipAddress: clientIp,
       userAgent: userAgent
     });
-    
+
     if (!isCorrect) {
       // Record failed submission for rate limiting
-      recordFailedSubmission(req.user.id, challenge._id);
-      
+      await recordFailedSubmission(req.user.id, challenge._id);
+
       return res.status(400).json({
         success: false,
         message: 'Incorrect flag'
@@ -287,7 +299,7 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
     }
 
     // Clear rate limiting attempts on successful submission
-    clearSubmissionAttempts(req.user.id, challenge._id);
+    await clearSubmissionAttempts(req.user.id, challenge._id);
 
     // Use transaction for atomic operations to prevent race conditions
     const session = await mongoose.startSession();

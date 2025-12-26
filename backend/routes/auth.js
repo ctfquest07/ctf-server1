@@ -17,6 +17,9 @@ const logActivity = (action, details = {}) => {
   console.log(`[${timestamp}] AUTH: ${action}`, details);
 };
 const crypto = require('crypto');
+const Redis = require('ioredis');
+// Initialize Redis for Leaderboard Caching
+const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 
 // Helper function to get real IP address using request-ip
 const getRealIP = (req) => {
@@ -31,14 +34,14 @@ const getRealIP = (req) => {
 // Helper function to parse user agent
 const parseUserAgent = (userAgentString) => {
   if (!userAgentString) return 'Unknown';
-  
+
   const parser = new UAParser(userAgentString);
   const result = parser.getResult();
-  
+
   const browser = result.browser.name ? `${result.browser.name} ${result.browser.version}` : 'Unknown Browser';
   const os = result.os.name ? `${result.os.name} ${result.os.version}` : 'Unknown OS';
   const device = result.device.type ? result.device.type : 'desktop';
-  
+
   return `${browser} on ${os} (${device})`;
 };
 
@@ -49,14 +52,14 @@ const createLoginLog = async (user, req, status, failureReason = null) => {
     if (user && user._id) {
       // Get real IP address using request-ip library
       const realIP = getRealIP(req);
-      
+
       // Parse user agent for better readability
       const rawUserAgent = req.get('User-Agent') || 'Unknown';
       const parsedUserAgent = parseUserAgent(rawUserAgent);
-      
+
       // Create timestamp in Indian Standard Time (IST)
       const istTime = moment().tz('Asia/Kolkata').toDate();
-      
+
       const loginLog = await LoginLog.create({
         user: user._id,
         email: user.email,
@@ -67,7 +70,7 @@ const createLoginLog = async (user, req, status, failureReason = null) => {
         status,
         failureReason
       });
-      
+
       console.log(`Login log created: ${user.username} - ${status} - IP: ${realIP} - Agent: ${parsedUserAgent}`);
       return loginLog;
     }
@@ -306,7 +309,7 @@ router.post('/register-admin', protect, authorize('admin', 'superadmin'), async 
 router.post('/login', sanitizeInput, async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     // Enhanced input validation
     let validatedEmail;
     try {
@@ -330,12 +333,21 @@ router.post('/login', sanitizeInput, async (req, res) => {
       });
     }
 
-    // Account locking disabled - allow all login attempts
+    // Check for account locking (Relaxed: 20 attempts, 5 min lock)
+    if (user.isLocked()) {
+      await createLoginLog(user, req, 'failed', 'Account locked');
+
+      return res.status(429).json({
+        success: false,
+        message: 'Account is temporarily locked. Please try again later.',
+        retryAfter: Math.ceil((user.lockUntil - Date.now()) / 1000)
+      });
+    }
 
     // Check if user is blocked by admin
     if (user.isBlocked) {
       await createLoginLog(user, req, 'failed', 'Account blocked by admin');
-      
+
       return res.status(403).json({
         success: false,
         message: 'You are blocked. Suspicious activity detected. Contact Admin for further information.',
@@ -348,7 +360,8 @@ router.post('/login', sanitizeInput, async (req, res) => {
     const isMatch = await user.matchPassword(password);
 
     if (!isMatch) {
-      // Log failed login attempt but don't block account
+      // Log failed login attempt and increment counter
+      await user.incrementLoginAttempts();
       await createLoginLog(user, req, 'failed', 'Invalid password');
 
       return res.status(401).json({
@@ -361,7 +374,8 @@ router.post('/login', sanitizeInput, async (req, res) => {
     user.lastLoginAt = new Date();
     await user.save();
 
-    // Log successful login
+    // Log successful login and reset attempts
+    await user.resetLoginAttempts();
     await createLoginLog(user, req, 'success');
 
     // Populate team info
@@ -533,6 +547,23 @@ router.get('/leaderboard', protect, async (req, res) => {
     const { type = 'teams' } = req.query;
     console.log('Fetching leaderboard data...', { type });
 
+    // Check Redis Cache
+    const cacheKey = `leaderboard:${type}`;
+
+    try {
+      const cachedData = await redisClient.get(cacheKey);
+      if (cachedData) {
+        return res.json({
+          success: true,
+          type: type,
+          data: JSON.parse(cachedData),
+          cached: true
+        });
+      }
+    } catch (e) {
+      console.warn('Redis cache error:', e);
+    }
+
     if (type === 'teams') {
       const Team = require('../models/Team');
       let teams = await Team.find()
@@ -542,7 +573,7 @@ router.get('/leaderboard', protect, async (req, res) => {
 
       // If not admin, filter teams to only show those with visible members
       if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
-        teams = teams.filter(team => 
+        teams = teams.filter(team =>
           team.members.some(member => member.showInLeaderboard !== false)
         );
       }
@@ -554,7 +585,7 @@ router.get('/leaderboard', protect, async (req, res) => {
           const memberSolveTime = member.lastSolveTime ? new Date(member.lastSolveTime) : new Date(0);
           return memberSolveTime > latest ? memberSolveTime : latest;
         }, new Date(0));
-        
+
         return {
           ...team,
           points: totalPoints,
@@ -569,7 +600,8 @@ router.get('/leaderboard', protect, async (req, res) => {
         return new Date(b.lastSolveTime) - new Date(a.lastSolveTime);
       }).slice(0, 20);
 
-      console.log('Leaderboard teams:', teamsWithPoints.map(t => ({ name: t.name, members: t.members.length, points: t.points })));
+      // Cache for 30 seconds
+      await redisClient.setex(cacheKey, 30, JSON.stringify(teamsWithPoints));
 
       res.json({
         success: true,
@@ -579,18 +611,20 @@ router.get('/leaderboard', protect, async (req, res) => {
     } else {
       // Build query based on user role
       let userQuery = { role: 'user' };
-      
+
       // If not admin, only show users with showInLeaderboard: true (default) or explicitly true
       if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
         userQuery.showInLeaderboard = { $ne: false }; // Show users where showInLeaderboard is not false
       }
-      
+
       const users = await User.find(userQuery)
         .select('username points solvedChallenges role team showInLeaderboard lastSolveTime')
         .populate('team', 'name')
-        .sort({ points: -1, lastSolveTime: 1, username: 1 });
+        .sort({ points: -1, lastSolveTime: 1, username: 1 })
+        .limit(100); // Limit to top 100 for performance
 
-      console.log('Leaderboard users:', users.map(u => ({ username: u.username, role: u.role, showInLeaderboard: u.showInLeaderboard })));
+      // Cache for 30 seconds
+      await redisClient.setex(cacheKey, 30, JSON.stringify(users));
 
       res.json({
         success: true,
@@ -598,6 +632,26 @@ router.get('/leaderboard', protect, async (req, res) => {
         data: users
       });
     }
+    // redis.disconnect(); // Don't disconnect if reusing, but here we created a new instance which is inefficient.
+    // Ideally use shared instance. For now, let GC handle or rely on ioredis management.
+    // Better: use shared client from earlier refactor if globally available, but this file doesn't have it.
+    // Creating one per request is bad practice.
+    // FIX: Import the redis client properly or reuse connection. 
+    // Since I can't easily change the whole file structure to export client right now without restart, 
+    // I will use a local require inside the route but logic suggests it should be top level.
+    // However, I will stick to this for "Stability over perfection" and minimal diff.
+    // Actually, creating new connection per request IS a stability risk.
+    // I will fix this by creating a singleton helper or assuming global context?
+    // Let's just create it at top of file in next step if needed. 
+    // For this specific 'replace', I will just instantiate it once outside the if/else if possible... 
+    // Wait, I can't modify top of file easily with this chunk.
+    // I will use existing `redisClient` if I added it? No I didn't add it to auth.js yet.
+    // I added it to middleware/auth.js
+    // I should add `const Redis = require('ioredis'); const redis = new Redis(...)` to top of auth.js first?
+    // Or just do it here efficiently.
+    // Actually, I'll use the one I added in `middleware/auth.js`? No that's not exported.
+    // I will instantiate it here but inside the route is risky.
+    // BETTER PLAN: Update top of file to import Redis, then update this chunk.
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -612,7 +666,7 @@ router.get('/leaderboard', protect, async (req, res) => {
 router.get('/users', protect, authorize('admin', 'superadmin'), async (req, res) => {
   try {
     const { all, search } = req.query;
-    
+
     // Build search query
     let query = {};
     if (search) {
@@ -621,7 +675,7 @@ router.get('/users', protect, authorize('admin', 'superadmin'), async (req, res)
         { email: { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     if (all === 'true') {
       // Return all users without pagination for team creation
       const users = await User.find(query)
@@ -673,7 +727,7 @@ router.get('/users/:id', protect, async (req, res) => {
     // Allow users to view their own profile or admins to view any profile
     const isOwnProfile = req.user.id === req.params.id;
     const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
-    
+
     if (!isOwnProfile && !isAdmin) {
       return res.status(403).json({
         success: false,
@@ -1050,7 +1104,7 @@ router.put('/platform-control/block-submissions', protect, authorize('admin', 's
     }
 
     const Challenge = require('../models/Challenge');
-    
+
     await Challenge.updateMany(
       {},
       { submissionsAllowed }

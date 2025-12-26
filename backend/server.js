@@ -12,9 +12,11 @@ const requestIp = require('request-ip');
 const morgan = require('morgan')
 
 // Security middleware imports
-const { 
-  strictLoginLimiter, 
-  apiLimiter, 
+const { RedisStore } = require('connect-redis');
+const Redis = require('ioredis');
+const {
+  strictLoginLimiter,
+  apiLimiter,
   challengeSubmitLimiter,
   advancedHelmet,
   advancedSanitization,
@@ -71,14 +73,14 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
     const allowedOrigins = process.env.CORS_ORIGIN.split(',').map(o => o.trim());
-    
+
     // Allow localhost for development
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
       return callback(null, true);
     }
-    
+
     if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
       callback(null, true);
     } else {
@@ -93,23 +95,29 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Session configuration with secure settings (memory store for now)
+// Initialize Redis Client
+const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+redisClient.on('error', (err) => console.log('Redis Client Error', err));
+redisClient.on('connect', () => console.log('Redis Client Connected'));
+
+// Session configuration with Redis Store
 app.use(session({
+  store: new RedisStore({ client: redisClient, prefix: 'ctf:sess:' }),
   secret: process.env.SESSION_SECRET,
   name: 'ctfquest.sid',
   resave: false,
-  proxy: true,
-  saveUninitialized: false,
+  saveUninitialized: false, // Don't create sessions for unauthenticated users
+  proxy: true, // Trusted proxy is already set
   cookie: {
-    secure: false,
-    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // Secure in production
+    httpOnly: true, // Prevents XSS theft
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: 'strict'
+    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax' // Lax is better for UX traversing links
   }
 }));
 
 // Performance middleware
-app.use(compression({ 
+app.use(compression({
   level: 6,
   threshold: 1024,
   filter: (req, res) => {
@@ -122,14 +130,14 @@ app.use(compression({
 app.use(concurrencyMiddleware);
 
 // Body parsing with security limits
-app.use(express.json({ 
+app.use(express.json({
   limit: '1mb',
   verify: (req, res, buf) => {
     req.rawBody = buf;
   }
 }));
-app.use(express.urlencoded({ 
-  extended: true, 
+app.use(express.urlencoded({
+  extended: true,
   limit: '1mb',
   parameterLimit: 20
 }));
@@ -225,19 +233,21 @@ app.use('/api/notices', noticeRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
 // Enhanced security headers middleware
+// Enhanced security headers middleware - Relaxed for UX
 app.use((req, res, next) => {
   // Prevent MIME type sniffing
   res.setHeader('X-Content-Type-Options', 'nosniff');
   // Prevent clickjacking
-  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN'); // Allow same origin framing
   // XSS protection
   res.setHeader('X-XSS-Protection', '1; mode=block');
   // HSTS for HTTPS
   if (process.env.NODE_ENV === 'production') {
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
-  // Content Security Policy
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https:;");
+  // Relaxed Content Security Policy for CTF environment
+  // Allows inline scripts/styles which are common in challenges and rapid dev
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' https: data:; worker-src 'self' blob:;");
   next();
 });
 
@@ -297,7 +307,7 @@ app.use((err, req, res, next) => {
 
   // Default error - never expose internal details in production
   const isProduction = process.env.NODE_ENV === 'production';
-  
+
   // Log full error details server-side
   console.error('Server Error:', {
     message: err.message,
@@ -307,7 +317,7 @@ app.use((err, req, res, next) => {
     ip: req.ip,
     userAgent: req.get('User-Agent')
   });
-  
+
   res.status(err.status || 500).json({
     success: false,
     message: isProduction ? 'Internal server error' : err.message,
@@ -341,7 +351,7 @@ const mongoOptions = {
   serverSelectionTimeoutMS: parseInt(process.env.MONGO_SERVER_SELECTION_TIMEOUT) || 10000, // How long to try selecting a server
   socketTimeoutMS: parseInt(process.env.MONGO_SOCKET_TIMEOUT) || 60000, // How long a send or receive on a socket can take before timing out
   heartbeatFrequencyMS: parseInt(process.env.MONGO_HEARTBEAT_FREQUENCY) || 5000, // How often to check the status of the connection
-  
+
   // Connection wait queue settings
   waitQueueTimeoutMS: parseInt(process.env.MONGO_WAIT_QUEUE_TIMEOUT) || 10000,
 
@@ -360,21 +370,21 @@ mongoose.set('bufferCommands', false); // Disable mongoose buffering
 mongoose.set('strictQuery', true); // Enable strict mode for queries
 
 mongoose.connect(MONGODB_URI, mongoOptions)
-.then(async () => {
-  console.log('MongoDB connected successfully with enhanced connection pooling');
-  console.log(`Connection pool: min=${mongoOptions.minPoolSize}, max=${mongoOptions.maxPoolSize}`);
+  .then(async () => {
+    console.log('MongoDB connected successfully with enhanced connection pooling');
+    console.log(`Connection pool: min=${mongoOptions.minPoolSize}, max=${mongoOptions.maxPoolSize}`);
 
-  // Ensure admin has correct password
-  const { ensureAdminPassword } = require('./scripts/createAdminWithNewPassword');
-  await ensureAdminPassword();
+    // Ensure admin has correct password
+    const { ensureAdminPassword } = require('./scripts/createAdminWithNewPassword');
+    await ensureAdminPassword();
 
-  app.listen(PORT, "127.0.0.1", () => {
-    console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-    console.log(`Server accessible at http://localhost:${PORT}`);
-    console.log(`MongoDB connection pool configured for ${mongoOptions.maxPoolSize} concurrent connections`);
+    app.listen(PORT, "127.0.0.1", () => {
+      console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+      console.log(`Server accessible at http://localhost:${PORT}`);
+      console.log(`MongoDB connection pool configured for ${mongoOptions.maxPoolSize} concurrent connections`);
+    });
+  })
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    //process.exit(1);
   });
-})
-.catch(err => {
-  console.error('MongoDB connection error:', err);
-  //process.exit(1);
-});
