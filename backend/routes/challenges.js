@@ -314,7 +314,8 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
           points: challenge.points,
           submittedAt: new Date().toISOString(),
           ip: clientIp,
-          status: 'incorrect'
+          status: 'incorrect',
+          submittedFlag: submittedFlag
         };
         
         console.log('[Real-time] Publishing failed attempt:', failedEvent.user, '->', failedEvent.challenge);
@@ -379,8 +380,8 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
         challengeId: challenge._id.toString(),
         points: challenge.points,
         submittedAt: new Date().toISOString(),
-        ip: clientIp
-        // NOTE: Actual flag value is NOT included for security
+        ip: clientIp,
+        submittedFlag: submittedFlag
       };
 
       console.log('[Real-time] Publishing submission event:', submissionEvent.user, '->', submissionEvent.challenge);

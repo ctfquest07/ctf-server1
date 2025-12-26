@@ -97,6 +97,7 @@ const AdminLiveMonitor = () => {
                             <th>User</th>
                             <th>Email</th>
                             <th>Challenge</th>
+                            <th>Flag</th>
                             <th>Points</th>
                             <th>IP</th>
                         </tr>
@@ -104,21 +105,22 @@ const AdminLiveMonitor = () => {
                     <tbody>
                         {submissions.length === 0 ? (
                             <tr className="empty-row">
-                                <td colSpan="6">Waiting for submissions...</td>
+                                <td colSpan="7">Waiting for submissions...</td>
                             </tr>
                         ) : (
                             submissions.map((sub, index) => {
                                 const isFailed = sub.type === 'failed_attempt' || sub.status === 'incorrect';
                                 return (
-                                    <tr key={index} className={`submission-row fade-in ${isFailed ? 'failed-attempt' : ''}`} style={isFailed ? {opacity: 0.6, color: '#e74c3c'} : {}}>
-                                        <td>{new Date(sub.submittedAt).toLocaleTimeString()}</td>
-                                        <td className="font-bold">{sub.user}</td>
-                                        <td className="text-dim">{sub.email}</td>
-                                        <td className="text-highlight">{sub.challenge}</td>
-                                        <td className={isFailed ? 'text-error' : 'text-success'}>
-                                            {isFailed ? '✗' : '+'}{sub.points}
+                                    <tr key={index} className={`submission-row fade-in ${isFailed ? 'failed-attempt' : ''}`} style={isFailed ? {color: '#e74c3c'} : {color: '#2ecc71'}}>
+                                        <td style={{color: '#ecf0f1'}}>{new Date(sub.submittedAt).toLocaleTimeString()}</td>
+                                        <td className="font-bold" style={{color: '#3498db'}}>{sub.user}</td>
+                                        <td style={{color: '#bdc3c7'}}>{sub.email}</td>
+                                        <td className="text-highlight" style={{color: '#e67e22'}}>{sub.challenge}</td>
+                                        <td style={{color: '#f39c12', fontFamily: 'monospace', fontSize: '0.9em'}}>{sub.submittedFlag || 'N/A'}</td>
+                                        <td className={isFailed ? 'text-error' : 'text-success'} style={{fontWeight: 'bold'}}>
+                                            {isFailed ? '✗ ' : '✓ '}{sub.points}
                                         </td>
-                                        <td className="text-dim">{sub.ip}</td>
+                                        <td style={{color: '#95a5a6'}}>{sub.ip}</td>
                                     </tr>
                                 );
                             })
