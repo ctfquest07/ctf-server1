@@ -83,11 +83,6 @@ function Scoreboard() {
       <div className="scoreboard-header">
         <h1>Scoreboard</h1>
         <p className="scoreboard-subtitle">Top performers ranked by points</p>
-        {lastUpdated && (
-          <p className="last-updated">
-            Last updated: {lastUpdated.toLocaleTimeString()} (auto-refreshes every 30s)
-          </p>
-        )}
       </div>
 
       <div className="scoreboard-tabs">
