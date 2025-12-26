@@ -62,7 +62,7 @@ router.get('/', async (req, res) => {
             });
         }
 
-        console.log(\`??? Admin \${user.username} connected to live submission feed\`);
+        console.log(`[SSE] Admin ${user.username} connected to live submission feed`);
     } catch (err) {
         return res.status(401).json({ 
             success: false,
