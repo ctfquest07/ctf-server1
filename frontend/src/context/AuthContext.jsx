@@ -5,11 +5,8 @@ const AuthContext = createContext();
 
 
 const getApiUrl = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-  // Default to relative path to allow Nginx to handle proxying
-  // This supports accessing via IP, domain, or localhost seamlessly
+  // Always use relative path for this deployment structure (Frontend + Backend on same server)
+  // This eliminates configuration errors and CORS issues
   return '';
 };
 
