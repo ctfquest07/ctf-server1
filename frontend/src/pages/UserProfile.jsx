@@ -61,8 +61,8 @@ function UserProfile() {
     return (
       <div className="user-profile-container">
         <div className="error">{error || 'User not found'}</div>
-        <button onClick={() => navigate('/leaderboard')} className="back-btn">
-          ← Back to Leaderboard
+        <button onClick={() => navigate('/scoreboard')} className="back-btn">
+          ← Back to Scoreboard
         </button>
       </div>
     );
@@ -73,8 +73,8 @@ function UserProfile() {
   return (
     <div className="user-profile-container">
       <div className="profile-header">
-        <button onClick={() => navigate('/leaderboard')} className="back-btn">
-          ← Back to Leaderboard
+        <button onClick={() => navigate('/scoreboard')} className="back-btn">
+          ← Back to Scoreboard
         </button>
         <h1>{user.username}</h1>
       </div>

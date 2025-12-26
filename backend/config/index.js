@@ -52,7 +52,7 @@ module.exports = {
     ttl: {
       userCache: parseDuration(process.env.REDIS_USER_CACHE_TTL || '5m', 300000), // 5 minutes
       challengeCache: parseDuration(process.env.REDIS_CHALLENGE_CACHE_TTL || '5m', 300000),
-      leaderboardCache: parseDuration(process.env.REDIS_LEADERBOARD_CACHE_TTL || '30s', 30000)
+      scoreboardCache: parseDuration(process.env.REDIS_SCOREBOARD_CACHE_TTL || '30s', 30000)
     }
   },
 

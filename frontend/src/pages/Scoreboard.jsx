@@ -2,9 +2,9 @@ import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
-import './Leaderboard.css';
+import './Scoreboard.css';
 
-function Leaderboard() {
+function Scoreboard() {
   const [teams, setTeams] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,10 +14,10 @@ function Leaderboard() {
   const { token, isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const fetchLeaderboard = async (isAutoRefresh = false) => {
+  const fetchScoreboard = async (isAutoRefresh = false) => {
     try {
       if (!isAuthenticated) {
-        setError('You must be logged in to view the leaderboard');
+        setError('You must be logged in to view the scoreboard');
         if (!isAutoRefresh) setLoading(false);
         return;
       }
@@ -29,8 +29,8 @@ function Leaderboard() {
       };
 
       const [teamsRes, usersRes] = await Promise.all([
-        axios.get('/api/auth/leaderboard?type=teams', config),
-        axios.get('/api/auth/leaderboard?type=users', config)
+        axios.get('/api/auth/scoreboard?type=teams', config),
+        axios.get('/api/auth/scoreboard?type=users', config)
       ]);
 
       setTeams(teamsRes.data.data || []);
@@ -43,20 +43,20 @@ function Leaderboard() {
       if (err.response?.status === 401) {
         setError('Authentication required. Please log in.');
         navigate('/login');
-      } else if (err.response?.status === 403 && err.response?.data?.leaderboardDisabled) {
+      } else if (err.response?.status === 403 && err.response?.data?.scoreboardDisabled) {
         setError(err.response.data.message);
       } else if (!isAutoRefresh) {
-        setError('Failed to fetch leaderboard data');
+        setError('Failed to fetch scoreboard data');
       }
       if (!isAutoRefresh) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLeaderboard();
+    fetchScoreboard();
 
     const interval = setInterval(() => {
-      fetchLeaderboard(true);
+      fetchScoreboard(true);
     }, 30000);
 
     return () => clearInterval(interval);
@@ -64,25 +64,25 @@ function Leaderboard() {
 
   if (loading) {
     return (
-      <div className="leaderboard-container">
-        <div className="loading">Loading leaderboard...</div>
+      <div className="scoreboard-container">
+        <div className="loading">Loading scoreboard...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="leaderboard-container">
+      <div className="scoreboard-container">
         <div className="error">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="leaderboard-container">
-      <div className="leaderboard-header">
-        <h1>Leaderboard</h1>
-        <p className="leaderboard-subtitle">Top performers ranked by points</p>
+    <div className="scoreboard-container">
+      <div className="scoreboard-header">
+        <h1>Scoreboard</h1>
+        <p className="scoreboard-subtitle">Top performers ranked by points</p>
         {lastUpdated && (
           <p className="last-updated">
             Last updated: {lastUpdated.toLocaleTimeString()} (auto-refreshes every 30s)
@@ -90,7 +90,7 @@ function Leaderboard() {
         )}
       </div>
 
-      <div className="leaderboard-tabs">
+      <div className="scoreboard-tabs">
         <button
           className={`tab-button ${viewType === 'teams' ? 'active' : ''}`}
           onClick={() => setViewType('teams')}
@@ -105,8 +105,8 @@ function Leaderboard() {
         </button>
       </div>
 
-      <div className="leaderboard-table-container">
-        <table className="leaderboard-table">
+      <div className="scoreboard-table-container">
+        <table className="scoreboard-table">
           <thead>
             <tr>
               <th className="rank-column">Rank</th>
@@ -168,4 +168,4 @@ function Leaderboard() {
   );
 }
 
-export default Leaderboard;
+export default Scoreboard;

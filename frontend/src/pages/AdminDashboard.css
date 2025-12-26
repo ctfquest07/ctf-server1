@@ -2473,8 +2473,8 @@ input[type="url"]::placeholder {
   font-weight: 500;
 }
 
-/* Leaderboard Tabs */
-.leaderboard-tabs {
+/* Scoreboard Tabs */
+.scoreboard-tabs {
   display: flex;
   gap: 1rem;
   margin-bottom: 2rem;
@@ -2484,7 +2484,7 @@ input[type="url"]::placeholder {
   border: 1px solid #1a2e46;
 }
 
-.leaderboard-tabs .tab-button {
+.scoreboard-tabs .tab-button {
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 4px;
@@ -2497,7 +2497,7 @@ input[type="url"]::placeholder {
   overflow: hidden;
 }
 
-.leaderboard-tabs .tab-button.active {
+.scoreboard-tabs .tab-button.active {
   background: #00ffaa;
   color: #000000;
   font-weight: 600;

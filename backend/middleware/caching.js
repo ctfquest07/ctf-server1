@@ -2,7 +2,7 @@ const cache = new Map();
 
 const CACHE_CONFIG = {
   challenges: 300000, // 5 minutes
-  leaderboard: 180000, // 3 minutes
+  scoreboard: 180000, // 3 minutes
   userProfile: 600000, // 10 minutes
   default: 60000 // 1 minute
 };

@@ -214,10 +214,10 @@ router.get('/traffic', protect, authorize('admin', 'superadmin'), async (req, re
   }
 });
 
-// @route   GET /api/analytics/leaderboard-stats
-// @desc    Get leaderboard statistics
+// @route   GET /api/analytics/scoreboard-stats
+// @desc    Get scoreboard statistics
 // @access  Private/Admin
-router.get('/leaderboard-stats', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.get('/scoreboard-stats', protect, authorize('admin', 'superadmin'), async (req, res) => {
   try {
     const topUsers = await User.find()
       .select('username points solvedChallenges')
@@ -237,7 +237,7 @@ router.get('/leaderboard-stats', protect, authorize('admin', 'superadmin'), asyn
       data: topUsersData
     });
   } catch (err) {
-    console.error('Error fetching leaderboard stats:', err);
+    console.error('Error fetching scoreboard stats:', err);
     res.status(500).json({
       success: false,
       message: 'Server error',

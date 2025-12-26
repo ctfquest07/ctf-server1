@@ -35,7 +35,7 @@ const finalSystemTest = async () => {
       maxParticipants: 50,
       challenges: [],
       settings: {
-        showLeaderboard: true,
+        showScoreboard: true,
         allowLateJoin: true,
         showParticipantCount: true
       }

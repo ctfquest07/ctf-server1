@@ -22,7 +22,7 @@ import About from './pages/About'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Profile from './pages/Profile'
-import Leaderboard from './pages/Leaderboard'
+import Scoreboard from './pages/Scoreboard'
 import CreateChallenge from './pages/CreateChallenge'
 import EditChallenge from './pages/EditChallenge'
 import AdminDashboard from './pages/AdminDashboard'
@@ -105,9 +105,9 @@ function App() {
                   <Profile />
                 </ProtectedRoute>
               } />
-              <Route path="/leaderboard" element={
+              <Route path="/scoreboard" element={
                 <ProtectedRoute>
-                  <Leaderboard />
+                  <Scoreboard />
                 </ProtectedRoute>
               } />
               <Route path="/user/:userId" element={

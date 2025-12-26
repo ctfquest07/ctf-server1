@@ -62,7 +62,7 @@ function Documentation() {
               <ul className="doc-list">
                 <li><strong>Challenges Page:</strong> Browse and attempt various cybersecurity challenges with pagination</li>
                 <li><strong>Profile Page:</strong> Track your progress, points, and achievements</li>
-                <li><strong>Leaderboard:</strong> See individual and team rankings (when enabled by admin)</li>
+                <li><strong>Scoreboard:</strong> See individual and team rankings (when enabled by admin)</li>
                 <li><strong>Teams:</strong> Join or create teams for collaborative competition</li>
               </ul>
               
@@ -145,7 +145,7 @@ function Documentation() {
                 <li>Teams can have up to 2 members maximum</li>
                 <li>Users can create new teams or join existing ones</li>
                 <li>Team points are calculated by summing all members' individual points</li>
-                <li>Both individual and team leaderboards are available</li>
+                <li>Both individual and team scoreboards are available</li>
               </ul>
               
               <h3>Team Competition</h3>
@@ -154,7 +154,7 @@ function Documentation() {
               </p>
               <ul className="doc-list">
                 <li><strong>Shared Progress:</strong> Team points reflect combined member achievements</li>
-                <li><strong>Team Leaderboard:</strong> Separate ranking system for teams</li>
+                <li><strong>Team Scoreboard:</strong> Separate ranking system for teams</li>
                 <li><strong>Collaborative Solving:</strong> Members can work together on challenges</li>
               </ul>
               
@@ -182,15 +182,15 @@ function Documentation() {
                 <li><strong>Expert:</strong> 700-1000 points</li>
               </ul>
               
-              <h3>Leaderboard Ranking</h3>
+              <h3>Scoreboard Ranking</h3>
               <p>
-                The platform features dual leaderboard systems:
+                The platform features dual scoreboard systems:
               </p>
               <ul className="doc-list">
-                <li><strong>Individual Leaderboard:</strong> Ranks users by their personal points</li>
-                <li><strong>Team Leaderboard:</strong> Ranks teams by combined member points</li>
-                <li>Only users with 'user' role appear on leaderboards (admins excluded)</li>
-                <li>Leaderboard access can be enabled/disabled by administrators</li>
+                <li><strong>Individual Scoreboard:</strong> Ranks users by their personal points</li>
+                <li><strong>Team Scoreboard:</strong> Ranks teams by combined member points</li>
+                <li>Only users with 'user' role appear on scoreboards (admins excluded)</li>
+                <li>Scoreboard access can be enabled/disabled by administrators</li>
               </ul>
               
               <h3>Achievements</h3>
@@ -277,9 +277,9 @@ function Documentation() {
               </div>
               
               <div className="faq-item">
-                <h3>Why can't I see the leaderboard?</h3>
+                <h3>Why can't I see the scoreboard?</h3>
                 <p>
-                  The leaderboard may be temporarily disabled by administrators. When disabled, you'll see a message indicating it's currently unavailable.
+                  The scoreboard may be temporarily disabled by administrators. When disabled, you'll see a message indicating it's currently unavailable.
                 </p>
               </div>
               
@@ -314,7 +314,7 @@ function Documentation() {
               <div className="faq-item">
                 <h3>What happens during a platform reset?</h3>
                 <p>
-                  A platform reset (admin only) clears all user points, marks all challenges as unsolved, and resets the leaderboard to a fresh state. This action is irreversible.
+                  A platform reset (admin only) clears all user points, marks all challenges as unsolved, and resets the scoreboard to a fresh state. This action is irreversible.
                 </p>
               </div>
             </section>

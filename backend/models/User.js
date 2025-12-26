@@ -71,7 +71,7 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  showInLeaderboard: {
+  showInScoreboard: {
     type: Boolean,
     default: true
   },
@@ -243,7 +243,7 @@ UserSchema.methods.clearOTP = function () {
 // Create indexes for better performance with multiple users
 UserSchema.index({ email: 1 }, { unique: true });
 UserSchema.index({ username: 1 }, { unique: true });
-UserSchema.index({ points: -1 }); // For leaderboard queries
+UserSchema.index({ points: -1 }); // For scoreboard queries
 UserSchema.index({ solvedChallenges: 1 }); // For challenge lookup
 UserSchema.index({ role: 1 }); // For role-based queries
 UserSchema.index({ createdAt: 1 }); // For sorting by registration date
@@ -251,10 +251,10 @@ UserSchema.index({ lockUntil: 1 }, { sparse: true }); // For account locking
 UserSchema.index({ resetPasswordExpire: 1 }, { sparse: true, expireAfterSeconds: 0 }); // TTL index for password reset
 
 // Compound indexes for complex queries
-UserSchema.index({ role: 1, points: -1 }); // For admin leaderboard queries
+UserSchema.index({ role: 1, points: -1 }); // For admin scoreboard queries
 UserSchema.index({ email: 1, lockUntil: 1 }, { sparse: true }); // For login attempt tracking
 UserSchema.index({ isBlocked: 1 }); // For blocked users queries
 UserSchema.index({ canSubmitFlags: 1 }); // For submission control queries
-UserSchema.index({ showInLeaderboard: 1 }); // For leaderboard visibility queries
+UserSchema.index({ showInScoreboard: 1 }); // For scoreboard visibility queries
 
 module.exports = mongoose.model('User', UserSchema);

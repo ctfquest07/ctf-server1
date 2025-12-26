@@ -51,7 +51,7 @@ async function prepareProduction() {
     );
     console.log('    ✓ Submission indexes created');
 
-    console.log('  → User indexes (leaderboard optimization)...');
+    console.log('  → User indexes (scoreboard optimization)...');
     await User.collection.createIndex({ points: -1 }, { background: true });
     await User.collection.createIndex({ lastSolveTime: 1 }, { background: true });
     await User.collection.createIndex({ role: 1, points: -1 }, { background: true });

@@ -70,7 +70,7 @@ function Home() {
               <h3>For Students</h3>
               <ul>
                 <li>Hands-on cybersecurity practice</li>
-                <li>Real-time leaderboards</li>
+                <li>Real-time scoreboards</li>
                 <li>Community forums & chat</li>
                 <li>Progress tracking</li>
               </ul>

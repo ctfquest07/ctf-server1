@@ -92,7 +92,7 @@ function Navbar() {
               <li><Link to="/challenges" className={`nav-link ${isActiveLink('/challenges') ? 'active' : ''}`}>Challenges</Link></li>
             )}
             {isAuthenticated && (
-              <li><Link to="/leaderboard" className={`nav-link ${isActiveLink('/leaderboard') ? 'active' : ''}`}>Leaderboard</Link></li>
+              <li><Link to="/scoreboard" className={`nav-link ${isActiveLink('/scoreboard') ? 'active' : ''}`}>Scoreboard</Link></li>
             )}
             {user?.role === 'admin' && (
               <li className="admin-dropdown">

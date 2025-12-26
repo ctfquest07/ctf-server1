@@ -13,7 +13,7 @@ function PlatformControl() {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [globalBlockSubmissions, setGlobalBlockSubmissions] = useState(false);
-  const [leaderboardEnabled, setLeaderboardEnabled] = useState(true);
+  const [scoreboardEnabled, setScoreboardEnabled] = useState(true);
   const [maxConnections, setMaxConnections] = useState(100);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -124,11 +124,11 @@ function PlatformControl() {
     }
   };
 
-  const handleLeaderboardVisibility = async (userId, currentVisibility) => {
+  const handleScoreboardVisibility = async (userId, currentVisibility) => {
     try {
       await axios.put(
-        `/api/auth/users/${userId}/leaderboard-visibility`,
-        { showInLeaderboard: !currentVisibility },
+        `/api/auth/users/${userId}/scoreboard-visibility`,
+        { showInScoreboard: !currentVisibility },
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -137,9 +137,9 @@ function PlatformControl() {
       );
 
       setUsers(users.map(u =>
-        u._id === userId ? { ...u, showInLeaderboard: !currentVisibility } : u
+        u._id === userId ? { ...u, showInScoreboard: !currentVisibility } : u
       ));
-      setSuccessMessage(`Leaderboard visibility ${!currentVisibility ? 'shown' : 'hidden'}`);
+      setSuccessMessage(`Scoreboard visibility ${!currentVisibility ? 'shown' : 'hidden'}`);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Failed to update visibility';
@@ -170,11 +170,11 @@ function PlatformControl() {
     }
   };
 
-  const handleLeaderboardToggle = async () => {
+  const handleScoreboardToggle = async () => {
     try {
       await axios.put(
-        '/api/auth/platform-control/leaderboard-toggle',
-        { leaderboardEnabled: !leaderboardEnabled },
+        '/api/auth/platform-control/scoreboard-toggle',
+        { scoreboardEnabled: !scoreboardEnabled },
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -182,11 +182,11 @@ function PlatformControl() {
         }
       );
 
-      setLeaderboardEnabled(!leaderboardEnabled);
-      setSuccessMessage(`Leaderboard ${!leaderboardEnabled ? 'enabled' : 'disabled'}`);
+      setScoreboardEnabled(!scoreboardEnabled);
+      setSuccessMessage(`Scoreboard ${!scoreboardEnabled ? 'enabled' : 'disabled'}`);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Failed to update leaderboard setting';
+      const errorMsg = err.response?.data?.message || 'Failed to update scoreboard setting';
       setError(errorMsg);
       setTimeout(() => setError(null), 3000);
     }
@@ -300,14 +300,14 @@ function PlatformControl() {
           </div>
 
           <div className="control-card">
-            <h3>Leaderboard Control</h3>
-            <p>Enable or disable leaderboard access for all users</p>
+            <h3>Scoreboard Control</h3>
+            <p>Enable or disable scoreboard access for all users</p>
             <div className="control-toggle">
               <button
-                className={`toggle-btn ${leaderboardEnabled ? 'allowed' : 'blocked'}`}
-                onClick={handleLeaderboardToggle}
+                className={`toggle-btn ${scoreboardEnabled ? 'allowed' : 'blocked'}`}
+                onClick={handleScoreboardToggle}
               >
-                {leaderboardEnabled ? 'Leaderboard Enabled' : 'Leaderboard Disabled'}
+                {scoreboardEnabled ? 'Scoreboard Enabled' : 'Scoreboard Disabled'}
               </button>
             </div>
           </div>
@@ -388,7 +388,7 @@ function PlatformControl() {
                   <th>Role</th>
                   <th>Block User</th>
                   <th>Allow Submissions</th>
-                  <th>Show in Leaderboard</th>
+                  <th>Show in Scoreboard</th>
                 </tr>
               </thead>
               <tbody>
@@ -417,11 +417,11 @@ function PlatformControl() {
                     </td>
                     <td>
                       <button
-                        className={`control-btn ${u.showInLeaderboard ? 'visible' : 'hidden'}`}
-                        onClick={() => handleLeaderboardVisibility(u._id, u.showInLeaderboard)}
-                        title={u.showInLeaderboard ? 'Visible on leaderboard' : 'Hidden from leaderboard'}
+                        className={`control-btn ${u.showInScoreboard ? 'visible' : 'hidden'}`}
+                        onClick={() => handleScoreboardVisibility(u._id, u.showInScoreboard)}
+                        title={u.showInScoreboard ? 'Visible on scoreboard' : 'Hidden from scoreboard'}
                       >
-                        {u.showInLeaderboard ? '👁️ Visible' : '👁️‍🗨️ Hidden'}
+                        {u.showInScoreboard ? '👁️ Visible' : '👁️‍🗨️ Hidden'}
                       </button>
                     </td>
                   </tr>

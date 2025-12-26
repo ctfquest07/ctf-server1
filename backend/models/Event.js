@@ -37,7 +37,7 @@ const EventSchema = new mongoose.Schema({
     type: Number
   },
   settings: {
-    enableLeaderboard: {
+    enableScoreboard: {
       type: Boolean,
       default: true
     },

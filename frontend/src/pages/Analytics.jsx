@@ -10,7 +10,7 @@ function Analytics() {
   const [engagement, setEngagement] = useState(null);
   const [challengeStats, setChallengeStats] = useState(null);
   const [traffic, setTraffic] = useState(null);
-  const [leaderboard, setLeaderboard] = useState(null);
+  const [scoreboard, setScoreboard] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -39,20 +39,20 @@ function Analytics() {
           engagementRes,
           challengeRes,
           trafficRes,
-          leaderboardRes
+          scoreboardRes
         ] = await Promise.all([
           axios.get('/api/analytics/overview', config),
           axios.get('/api/analytics/user-engagement', config),
           axios.get('/api/analytics/challenge-stats', config),
           axios.get('/api/analytics/traffic', config),
-          axios.get('/api/analytics/leaderboard-stats', config)
+          axios.get('/api/analytics/scoreboard-stats', config)
         ]);
 
         setOverview(overviewRes.data.data);
         setEngagement(engagementRes.data.data);
         setChallengeStats(challengeRes.data.data);
         setTraffic(trafficRes.data.data);
-        setLeaderboard(leaderboardRes.data.data);
+        setScoreboard(scoreboardRes.data.data);
       } catch (err) {
         console.error('Error fetching analytics:', err);
         setError('Failed to load analytics data');
@@ -232,18 +232,18 @@ function Analytics() {
         </div>
       )}
 
-      {/* Leaderboard */}
-      {leaderboard && (
+      {/* Scoreboard */}
+      {scoreboard && (
         <div className="analytics-section">
           <h2>Top Users</h2>
-          <div className="leaderboard-table">
+          <div className="scoreboard-table">
             <div className="table-header">
               <div className="col-rank">Rank</div>
               <div className="col-username">Username</div>
               <div className="col-points">Points</div>
               <div className="col-challenges">Challenges</div>
             </div>
-            {leaderboard.map(user => (
+            {scoreboard.map(user => (
               <div key={user.rank} className="table-row">
                 <div className="col-rank">#{user.rank}</div>
                 <div className="col-username">{user.username}</div>

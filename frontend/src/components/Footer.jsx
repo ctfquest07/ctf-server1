@@ -66,7 +66,7 @@ const Footer = () => {
               <Link to="/" className="footer-link">Home</Link>
               <Link to="/challenges" className="footer-link">Challenges</Link>
               <Link to="/documentation" className="footer-link">Documentation</Link>
-              <Link to="/leaderboard" className="footer-link">Leaderboard</Link>
+              <Link to="/scoreboard" className="footer-link">Scoreboard</Link>
             </div>
 
             <div className="footer-nav-column">

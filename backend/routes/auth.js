@@ -19,7 +19,7 @@ const logActivity = (action, details = {}) => {
 };
 const crypto = require('crypto');
 const { getRedisClient } = require('../utils/redis');
-// Use centralized Redis client for leaderboard caching
+// Use centralized Redis client for scoreboard caching
 const redisClient = getRedisClient();
 
 // Helper function to get real IP address using request-ip
@@ -539,25 +539,25 @@ router.get('/me', protect, async (req, res) => {
   }
 });
 
-// @route   GET /api/auth/leaderboard
-// @desc    Get leaderboard by teams or users
+// @route   GET /api/auth/scoreboard
+// @desc    Get scoreboard by teams or users
 // @access  Private
-router.get('/leaderboard', protect, async (req, res) => {
+router.get('/scoreboard', protect, async (req, res) => {
   try {
-    // Check if leaderboard is enabled
-    if (process.env.LEADERBOARD_ENABLED === 'false') {
+    // Check if scoreboard is enabled
+    if (process.env.SCOREBOARD_ENABLED === 'false') {
       return res.status(403).json({
         success: false,
         message: 'This is currently disabled by Admin',
-        leaderboardDisabled: true
+        scoreboardDisabled: true
       });
     }
 
     const { type = 'teams' } = req.query;
-    console.log('Fetching leaderboard data...', { type });
+    console.log('Fetching scoreboard data...', { type });
 
     // Check Redis Cache
-    const cacheKey = `leaderboard:${type}`;
+    const cacheKey = `scoreboard:${type}`;
 
     try {
       const cachedData = await redisClient.get(cacheKey);
@@ -594,7 +594,7 @@ router.get('/leaderboard', protect, async (req, res) => {
               $filter: {
                 input: '$memberDetails',
                 as: 'member',
-                cond: { $ne: ['$$member.showInLeaderboard', false] }
+                cond: { $ne: ['$$member.showInScoreboard', false] }
               }
             }
           }
@@ -643,13 +643,13 @@ router.get('/leaderboard', protect, async (req, res) => {
       // Build query based on user role
       let userQuery = { role: 'user' };
 
-      // If not admin, only show users with showInLeaderboard: true (default) or explicitly true
+      // If not admin, only show users with showInScoreboard: true (default) or explicitly true
       if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
-        userQuery.showInLeaderboard = { $ne: false }; // Show users where showInLeaderboard is not false
+        userQuery.showInScoreboard = { $ne: false }; // Show users where showInScoreboard is not false
       }
 
       const users = await User.find(userQuery)
-        .select('username points solvedChallenges role team showInLeaderboard lastSolveTime')
+        .select('username points solvedChallenges role team showInScoreboard lastSolveTime')
         .populate('team', 'name')
         .sort({ points: -1, lastSolveTime: 1, username: 1 })
         .limit(100); // Limit to top 100 for performance
@@ -686,7 +686,7 @@ router.get('/leaderboard', protect, async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: process.env.NODE_ENV === 'development' ? error.message : 'Error fetching leaderboard'
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Error fetching scoreboard'
     });
   }
 });
@@ -1075,17 +1075,17 @@ router.put('/users/:id/submission-permission', protect, authorize('admin', 'supe
   }
 });
 
-// @route   PUT /api/auth/users/:id/leaderboard-visibility
-// @desc    Update user leaderboard visibility (Admin only)
+// @route   PUT /api/auth/users/:id/scoreboard-visibility
+// @desc    Update user scoreboard visibility (Admin only)
 // @access  Private/Admin
-router.put('/users/:id/leaderboard-visibility', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.put('/users/:id/scoreboard-visibility', protect, authorize('admin', 'superadmin'), async (req, res) => {
   try {
-    const { showInLeaderboard } = req.body;
+    const { showInScoreboard } = req.body;
 
-    if (typeof showInLeaderboard !== 'boolean') {
+    if (typeof showInScoreboard !== 'boolean') {
       return res.status(400).json({
         success: false,
-        message: 'showInLeaderboard must be a boolean'
+        message: 'showInScoreboard must be a boolean'
       });
     }
 
@@ -1098,26 +1098,26 @@ router.put('/users/:id/leaderboard-visibility', protect, authorize('admin', 'sup
       });
     }
 
-    user.showInLeaderboard = showInLeaderboard;
+    user.showInScoreboard = showInScoreboard;
     await user.save();
 
     res.json({
       success: true,
-      message: `User ${showInLeaderboard ? 'shown on' : 'hidden from'} leaderboard`,
+      message: `User ${showInScoreboard ? 'shown on' : 'hidden from'} scoreboard`,
       data: {
         id: user._id,
         username: user.username,
         email: user.email,
-        showInLeaderboard: user.showInLeaderboard
+        showInScoreboard: user.showInScoreboard
       }
     });
   } catch (error) {
-    console.error('Error updating leaderboard visibility:', error);
+    console.error('Error updating scoreboard visibility:', error);
     res.status(500).json({
       success: false,
       message: process.env.NODE_ENV === 'development' ?
-        `Error updating leaderboard visibility: ${error.message}` :
-        'Error updating leaderboard visibility. Please try again.'
+        `Error updating scoreboard visibility: ${error.message}` :
+        'Error updating scoreboard visibility. Please try again.'
     });
   }
 });
@@ -1161,37 +1161,37 @@ router.put('/platform-control/block-submissions', protect, authorize('admin', 's
   }
 });
 
-// @route   PUT /api/platform-control/leaderboard-toggle
-// @desc    Enable or disable leaderboard globally (Admin only)
+// @route   PUT /api/platform-control/scoreboard-toggle
+// @desc    Enable or disable scoreboard globally (Admin only)
 // @access  Private/Admin
-router.put('/platform-control/leaderboard-toggle', protect, authorize('admin', 'superadmin'), async (req, res) => {
+router.put('/platform-control/scoreboard-toggle', protect, authorize('admin', 'superadmin'), async (req, res) => {
   try {
-    const { leaderboardEnabled } = req.body;
+    const { scoreboardEnabled } = req.body;
 
-    if (typeof leaderboardEnabled !== 'boolean') {
+    if (typeof scoreboardEnabled !== 'boolean') {
       return res.status(400).json({
         success: false,
-        message: 'leaderboardEnabled must be a boolean'
+        message: 'scoreboardEnabled must be a boolean'
       });
     }
 
     // Store in environment or database - for now using a simple approach
-    process.env.LEADERBOARD_ENABLED = leaderboardEnabled.toString();
+    process.env.SCOREBOARD_ENABLED = scoreboardEnabled.toString();
 
     res.json({
       success: true,
-      message: `Leaderboard ${leaderboardEnabled ? 'enabled' : 'disabled'}`,
+      message: `Scoreboard ${scoreboardEnabled ? 'enabled' : 'disabled'}`,
       data: {
-        leaderboardEnabled
+        scoreboardEnabled
       }
     });
   } catch (error) {
-    console.error('Error updating leaderboard status:', error);
+    console.error('Error updating scoreboard status:', error);
     res.status(500).json({
       success: false,
       message: process.env.NODE_ENV === 'development' ?
-        `Error updating leaderboard status: ${error.message}` :
-        'Error updating leaderboard status. Please try again.'
+        `Error updating scoreboard status: ${error.message}` :
+        'Error updating scoreboard status. Please try again.'
     });
   }
 });

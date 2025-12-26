@@ -1,16 +1,16 @@
-.leaderboard-container {
+.scoreboard-container {
   max-width: 1000px;
   margin: 0 auto;
   padding: 2rem;
   color: #e0e0e0;
 }
 
-.leaderboard-header {
+.scoreboard-header {
   text-align: center;
   margin-bottom: 3rem;
 }
 
-.leaderboard-header h1 {
+.scoreboard-header h1 {
   font-size: 3rem;
   margin-bottom: 0.5rem;
   background: linear-gradient(90deg, #ffffff, #00ffaa);
@@ -20,7 +20,7 @@
   display: inline-block;
 }
 
-.leaderboard-subtitle {
+.scoreboard-subtitle {
   color: #a0a0a0;
   font-size: 1.2rem;
 }
@@ -33,7 +33,7 @@
   opacity: 0.8;
 }
 
-.leaderboard-table-container {
+.scoreboard-table-container {
   background-color: rgba(26, 46, 70, 0.5);
   border-radius: 8px;
   border: 1px solid #1a2e46;
@@ -41,19 +41,19 @@
   box-shadow: 0 4px 20px rgba(0, 255, 255, 0.05);
 }
 
-.leaderboard-table {
+.scoreboard-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.leaderboard-table th,
-.leaderboard-table td {
+.scoreboard-table th,
+.scoreboard-table td {
   padding: 1rem;
   text-align: left;
   border-bottom: 1px solid #1a2e46;
 }
 
-.leaderboard-table th {
+.scoreboard-table th {
   background-color: rgba(15, 25, 35, 0.8);
   color: #a0a0a0;
   font-weight: 500;
@@ -62,11 +62,11 @@
   letter-spacing: 1px;
 }
 
-.leaderboard-table tr:last-child td {
+.scoreboard-table tr:last-child td {
   border-bottom: none;
 }
 
-.leaderboard-table tr:hover {
+.scoreboard-table tr:hover {
   background-color: rgba(0, 255, 170, 0.05);
 }
 
@@ -159,12 +159,12 @@
 }
 
 @media (max-width: 768px) {
-  .leaderboard-table th,
-  .leaderboard-table td {
+  .scoreboard-table th,
+  .scoreboard-table td {
     padding: 0.75rem 0.5rem;
   }
   
-  .leaderboard-header h1 {
+  .scoreboard-header h1 {
     font-size: 2.5rem;
   }
   

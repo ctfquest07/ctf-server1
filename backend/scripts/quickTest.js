@@ -50,7 +50,7 @@ const quickTest = async () => {
         maxParticipants: 10,
         challenges: [],
         settings: {
-          showLeaderboard: true,
+          showScoreboard: true,
           allowLateJoin: true,
           showParticipantCount: true
         }

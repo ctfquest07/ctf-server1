@@ -20,7 +20,7 @@ function PlatformReset() {
       return;
     }
 
-    if (!window.confirm('Are you sure you want to reset the entire platform? This will:\n\n• Reset all user points to 0\n• Mark all challenges as unsolved\n• Clear all leaderboard data\n\nThis action cannot be undone!')) {
+    if (!window.confirm('Are you sure you want to reset the entire platform? This will:\n\n• Reset all user points to 0\n• Mark all challenges as unsolved\n• Clear all scoreboard data\n\nThis action cannot be undone!')) {
       return;
     }
 
@@ -63,7 +63,7 @@ function PlatformReset() {
           <ul>
             <li>All user points will be set to 0</li>
             <li>All challenges will be marked as unsolved</li>
-            <li>Leaderboard will be cleared</li>
+            <li>Scoreboard will be cleared</li>
             <li>All progress will be lost permanently</li>
           </ul>
         </div>
