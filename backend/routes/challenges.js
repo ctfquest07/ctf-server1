@@ -402,7 +402,7 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
 
     res.json({
       success: true,
-      message: `Challenge "${challenge.title}" solved successfully!`,
+      message: 'correct',
       points: challenge.points,
       timestamp: new Date().toISOString()
     });
