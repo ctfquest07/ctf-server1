@@ -10,11 +10,10 @@ const AdminLiveMonitor = () => {
 
     useEffect(() => {
         // Determine API URL (handle both dev and prod relative/absolute paths)
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:10000';
-        // Remove /api if present at the end for the root URL
-        const baseUrl = apiUrl.replace(/\/api$/, '');
-
-        const sseUrl = `${baseUrl}/r-submission?token=${token}`;
+        const apiUrl = import.meta.env.VITE_API_URL || '';
+        // Build SSE URL - ensure it goes through /api/ for nginx proxy
+        const baseUrl = apiUrl || '';
+        const sseUrl = `${baseUrl}/api/r-submission?token=${token}`;
 
         console.log('Connecting to SSE:', sseUrl);
 
