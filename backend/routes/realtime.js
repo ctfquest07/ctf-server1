@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const config = require('../config');
 const { getRedisSubscriber } = require('../utils/redis');
 const User = require('../models/User');
 
@@ -89,7 +90,7 @@ router.get('/', async (req, res) => {
     // Keep connection alive with periodic heartbeat
     const heartbeatInterval = setInterval(() => {
         res.write(`:heartbeat ${Date.now()}\n\n`);
-    }, 30000); // Every 30 seconds
+    }, config.realtime.heartbeatIntervalMs);
 
     // 4. Message Handler for this specific connection
     const messageHandler = (channel, message) => {

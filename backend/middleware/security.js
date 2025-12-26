@@ -11,16 +11,16 @@ const loginLimiter = rateLimit({
 });
 
 const challengeSubmitLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 10, // 10 submissions per minute
+  windowMs: config.rateLimit.flagSubmit.windowMs,
+  max: config.rateLimit.flagSubmit.max,
   message: { success: false, message: 'Too many flag submissions, slow down' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per window
+  windowMs: config.rateLimit.general.windowMs,
+  max: config.rateLimit.general.max,
   message: { success: false, message: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,

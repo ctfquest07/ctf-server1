@@ -1,9 +1,10 @@
 const jwt = require('jsonwebtoken');
+const config = require('../config');
 const User = require('../models/User');
 
 const { getRedisClient } = require('../utils/redis');
 const redisClient = getRedisClient();
-const CACHE_TTL = 300; // 5 minutes in seconds
+const CACHE_TTL = Math.floor(config.redis.ttl.userCache / 1000); // Convert ms to seconds
 
 // Protect routes
 exports.protect = async (req, res, next) => {
@@ -30,23 +31,28 @@ exports.protect = async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Check if token is about to expire (within 5 minutes)
+    // Calculate token lifetime and refresh threshold
+    // Refresh when 10% of token lifetime remains (e.g., 2.4h for 24h token, 6min for 1h token)
+    const tokenIssued = decoded.iat * 1000; // Convert to milliseconds
     const tokenExp = decoded.exp * 1000; // Convert to milliseconds
+    const tokenLifetime = tokenExp - tokenIssued;
+    const refreshThreshold = tokenLifetime * 0.10; // 10% of lifetime
     const now = Date.now();
-    const fiveMinutes = 5 * 60 * 1000;
+    const timeRemaining = tokenExp - now;
 
     let newTokenGenerated = false;
-    if (tokenExp - now < fiveMinutes) {
-      // Generate new token
+    if (timeRemaining < refreshThreshold && timeRemaining > 0) {
+      // Generate new token with same expiration as configured in .env
       const newToken = jwt.sign(
         { id: decoded.id },
         process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRE || '1h' }
+        { expiresIn: process.env.JWT_EXPIRE || '24h' }
       );
 
       // Set new token in response header
       res.setHeader('X-New-Token', newToken);
       newTokenGenerated = true;
+      console.log(`[Auth] Token refreshed for user ${decoded.id} (${Math.round(timeRemaining / 60000)}min remaining)`);
     }
 
     // Check cache first to reduce database load

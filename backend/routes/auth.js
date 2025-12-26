@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const config = require('../config');
 const User = require('../models/User');
 const LoginLog = require('../models/LoginLog');
 const { protect, authorize } = require('../middleware/auth');
@@ -79,10 +80,10 @@ const createLoginLog = async (user, req, status, failureReason = null) => {
   }
 };
 
-// Generate JWT Token
+// Generate JWT Token (fully env-driven)
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '1h'
+  return jwt.sign({ id }, config.jwt.secret, {
+    expiresIn: config.jwt.expiresIn
   });
 };
 
