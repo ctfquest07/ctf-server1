@@ -9,13 +9,21 @@ const AdminLiveMonitor = () => {
     const eventSourceRef = useRef(null);
 
     useEffect(() => {
+        // Wait for token to be available
+        if (!token) {
+            console.log('Waiting for auth token...');
+            setConnectionStatus('error');
+            return;
+        }
+
         // Determine API URL (handle both dev and prod relative/absolute paths)
         const apiUrl = import.meta.env.VITE_API_URL || '';
         // Build SSE URL - ensure it goes through /api/ for nginx proxy
         const baseUrl = apiUrl || '';
         const sseUrl = `${baseUrl}/api/r-submission?token=${token}`;
 
-        console.log('Connecting to SSE:', sseUrl);
+        console.log('Token available, connecting to SSE:', sseUrl);
+        console.log('Token length:', token?.length);
 
         // Close existing connection if any
         if (eventSourceRef.current) {
@@ -74,7 +82,17 @@ const AdminLiveMonitor = () => {
                 </div>
             </div>
 
-            <div className="table-container">
+            {!token && (
+                <div style={{padding: '20px', color: '#f39c12', background: '#2d1f0f', borderRadius: '8px', margin: '20px 0'}}>
+                    ⚠️ Authentication token not available. Please refresh the page or log in again.
+                </div>
+            )}
+
+            <div className="table-container">{connectionStatus === 'error' && token && (
+                    <div style={{padding: '10px', color: '#e74c3c', marginBottom: '10px'}}>
+                        Connection failed. Check console for details.
+                    </div>
+                )}
                 <table className="submissions-table">
                     <thead>
                         <tr>
