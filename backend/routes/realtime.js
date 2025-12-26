@@ -95,6 +95,8 @@ router.get('/', async (req, res) => {
     const messageHandler = (channel, message) => {
         if (channel === 'ctf:submissions:live') {
             try {
+                console.log('[Real-time] Received message on channel:', channel);
+                console.log('[Real-time] Message content:', message);
                 // Forward message to admin (already formatted as JSON by publisher)
                 res.write(`data: ${message}\n\n`);
             } catch (err) {

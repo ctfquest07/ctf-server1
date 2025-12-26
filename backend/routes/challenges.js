@@ -360,8 +360,13 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
         // NOTE: Actual flag value is NOT included for security
       };
 
+      console.log('[Real-time] Publishing submission event:', submissionEvent.user, '->', submissionEvent.challenge);
+
       // Fire and forget - don't await, catch errors to prevent blocking
       redisClient.publish('ctf:submissions:live', JSON.stringify(submissionEvent))
+        .then(subscribers => {
+          console.log(`[Real-time] Event published to ${subscribers} subscriber(s)`);
+        })
         .catch(err => {
           // Log error but don't affect player submission
           console.error('[Non-critical] Redis publish error:', err.message);
