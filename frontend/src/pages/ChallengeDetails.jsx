@@ -52,6 +52,7 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
               value={flag}
               onChange={(e) => setFlag(e.target.value)}
               placeholder="Enter the flag SECE{flag_here}"
+              autoComplete="off"
               disabled={isSubmitting || success}
             />
           </div>

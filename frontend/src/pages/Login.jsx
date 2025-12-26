@@ -94,6 +94,7 @@ function Login() {
               value={email}
               onChange={onChange}
               placeholder="Enter your email"
+              autoComplete="off"
               required
             />
           </div>
