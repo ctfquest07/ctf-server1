@@ -80,15 +80,15 @@ router.get('/', async (req, res) => {
     });
 
     // 3. Send initial connection message
-    res.write(\`data: \${JSON.stringify({ 
+    res.write(`data: ${JSON.stringify({ 
         type: 'connected', 
         message: 'Connected to live CTF submission stream',
         timestamp: new Date().toISOString()
-    })}\\n\\n\`);
+    })}\n\n`);
 
     // Keep connection alive with periodic heartbeat
     const heartbeatInterval = setInterval(() => {
-        res.write(\`:heartbeat \${Date.now()}\\n\\n\`);
+        res.write(`:heartbeat ${Date.now()}\n\n`);
     }, 30000); // Every 30 seconds
 
     // 4. Message Handler for this specific connection
@@ -96,7 +96,7 @@ router.get('/', async (req, res) => {
         if (channel === 'ctf:submissions:live') {
             try {
                 // Forward message to admin (already formatted as JSON by publisher)
-                res.write(\`data: \${message}\\n\\n\`);
+                res.write(`data: ${message}\n\n`);
             } catch (err) {
                 console.error('Error writing SSE message:', err);
             }
