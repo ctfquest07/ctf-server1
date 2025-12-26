@@ -16,11 +16,8 @@ const AdminLiveMonitor = () => {
             return;
         }
 
-        // Determine API URL (handle both dev and prod relative/absolute paths)
-        const apiUrl = import.meta.env.VITE_API_URL || '';
-        // Build SSE URL - ensure it goes through /api/ for nginx proxy
-        const baseUrl = apiUrl || '';
-        const sseUrl = `${baseUrl}/api/r-submission?token=${token}`;
+        // Use absolute path from root (works for both dev and production)
+        const sseUrl = `/api/r-submission?token=${token}`;
 
         console.log('Token available, connecting to SSE:', sseUrl);
         console.log('Token length:', token?.length);
