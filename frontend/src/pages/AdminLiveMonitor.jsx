@@ -107,16 +107,21 @@ const AdminLiveMonitor = () => {
                                 <td colSpan="6">Waiting for submissions...</td>
                             </tr>
                         ) : (
-                            submissions.map((sub, index) => (
-                                <tr key={index} className="submission-row fade-in">
-                                    <td>{new Date(sub.submittedAt).toLocaleTimeString()}</td>
-                                    <td className="font-bold">{sub.user}</td>
-                                    <td className="text-dim">{sub.email}</td>
-                                    <td className="text-highlight">{sub.challenge}</td>
-                                    <td className="text-success">+{sub.points}</td>
-                                    <td className="text-dim">{sub.ip}</td>
-                                </tr>
-                            ))
+                            submissions.map((sub, index) => {
+                                const isFailed = sub.type === 'failed_attempt' || sub.status === 'incorrect';
+                                return (
+                                    <tr key={index} className={`submission-row fade-in ${isFailed ? 'failed-attempt' : ''}`} style={isFailed ? {opacity: 0.6, color: '#e74c3c'} : {}}>
+                                        <td>{new Date(sub.submittedAt).toLocaleTimeString()}</td>
+                                        <td className="font-bold">{sub.user}</td>
+                                        <td className="text-dim">{sub.email}</td>
+                                        <td className="text-highlight">{sub.challenge}</td>
+                                        <td className={isFailed ? 'text-error' : 'text-success'}>
+                                            {isFailed ? '✗' : '+'}{sub.points}
+                                        </td>
+                                        <td className="text-dim">{sub.ip}</td>
+                                    </tr>
+                                );
+                            })
                         )}
                     </tbody>
                 </table>

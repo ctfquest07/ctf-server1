@@ -303,6 +303,29 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
       // Record failed submission for rate limiting
       await recordFailedSubmission(req.user._id, challenge._id);
 
+      // Optionally publish failed attempts for admin monitoring
+      try {
+        const failedEvent = {
+          type: 'failed_attempt',
+          user: req.user.username || 'Unknown',
+          email: req.user.email,
+          challenge: challenge.title,
+          challengeId: challenge._id.toString(),
+          points: challenge.points,
+          submittedAt: new Date().toISOString(),
+          ip: clientIp,
+          status: 'incorrect'
+        };
+        
+        console.log('[Real-time] Publishing failed attempt:', failedEvent.user, '->', failedEvent.challenge);
+        
+        redisClient.publish('ctf:submissions:live', JSON.stringify(failedEvent))
+          .then(subs => console.log(`[Real-time] Failed attempt sent to ${subs} subscriber(s)`))
+          .catch(err => console.error('[Non-critical] Redis publish error:', err.message));
+      } catch (e) {
+        console.error('[Non-critical] Error preparing failed attempt event:', e.message);
+      }
+
       return res.status(400).json({
         success: false,
         message: 'Incorrect flag'
