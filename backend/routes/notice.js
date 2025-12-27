@@ -76,7 +76,7 @@ router.post('/', protect, authorize('admin'), async (req, res) => {
     const newNotice = new Notice({
       title,
       description,
-      createdBy: req.user.id
+      createdBy: req.user._id || req.user.id
     });
 
     const notice = await newNotice.save();
