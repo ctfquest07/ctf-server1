@@ -71,8 +71,19 @@
 
 /* Remove any progress bar or background fill effects */
 .stat-card::before,
-.stat-card::after {
-  display: none;
+.stat-card::after,
+.stat-card *::before,
+.stat-card *::after {
+  display: none !important;
+  content: none !important;
+}
+
+.stat-card > *,
+.stat-card .stat-label,
+.stat-card .stat-value {
+  background: none !important;
+  background-image: none !important;
+  background-color: transparent !important;
 }
 
 .stat-card:hover {
