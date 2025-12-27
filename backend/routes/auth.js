@@ -575,6 +575,7 @@ router.get('/scoreboard', protect, async (req, res) => {
 
     if (type === 'teams') {
       const Team = require('../models/Team');
+      const Submission = require('../models/Submission');
       
       // Use MongoDB aggregation pipeline for performance (critical for 500+ users)
       const pipeline = [
@@ -613,7 +614,7 @@ router.get('/scoreboard', protect, async (req, res) => {
       // Sort and limit
       pipeline.push(
         { $sort: { totalPoints: -1, lastSolveTime: 1, name: 1 } },
-        { $limit: 20 },
+        { $limit: 50 }, // Get top 50 for tie-breaking calculation
         {
           $project: {
             _id: 1,
@@ -629,7 +630,48 @@ router.get('/scoreboard', protect, async (req, res) => {
         }
       );
 
-      const teamsWithPoints = await Team.aggregate(pipeline);
+      let teamsWithPoints = await Team.aggregate(pipeline);
+
+      // Calculate tie-breaking timestamp for each team
+      for (const team of teamsWithPoints) {
+        if (team.points > 0 && team.members && team.members.length > 0) {
+          const memberIds = team.members.map(m => m._id);
+          
+          // Get all correct submissions for team members, sorted by time
+          const submissions = await Submission.find({
+            user: { $in: memberIds },
+            isCorrect: true
+          }).select('submittedAt points user').sort({ submittedAt: 1 }).lean();
+
+          // Calculate cumulative score and find when they reached current score
+          let cumulativeScore = 0;
+          let reachedCurrentScoreAt = null;
+          
+          for (const sub of submissions) {
+            cumulativeScore += sub.points || 0;
+            if (cumulativeScore >= team.points) {
+              reachedCurrentScoreAt = sub.submittedAt;
+              break;
+            }
+          }
+          
+          team.tieBreakTime = reachedCurrentScoreAt || team.lastSolveTime || new Date();
+        } else {
+          team.tieBreakTime = new Date();
+        }
+      }
+
+      // Apply tie-breaking sort: score DESC, then tieBreakTime ASC
+      teamsWithPoints.sort((a, b) => {
+        if (b.points !== a.points) {
+          return b.points - a.points; // Higher score first
+        }
+        // Same score - earlier time wins
+        return new Date(a.tieBreakTime) - new Date(b.tieBreakTime);
+      });
+
+      // Limit to top 20
+      teamsWithPoints = teamsWithPoints.slice(0, 20);
 
       // Cache for 30 seconds
       await redisClient.setex(cacheKey, 30, JSON.stringify(teamsWithPoints));
@@ -648,11 +690,52 @@ router.get('/scoreboard', protect, async (req, res) => {
         userQuery.showInScoreboard = { $ne: false }; // Show users where showInScoreboard is not false
       }
 
-      const users = await User.find(userQuery)
+      let users = await User.find(userQuery)
         .select('username points solvedChallenges role team showInScoreboard lastSolveTime')
         .populate('team', 'name')
         .sort({ points: -1, lastSolveTime: 1, username: 1 })
-        .limit(100); // Limit to top 100 for performance
+        .limit(200) // Get top 200 for tie-breaking calculation
+        .lean();
+
+      // Calculate tie-breaking timestamp for each user
+      const Submission = require('../models/Submission');
+      for (const user of users) {
+        if (user.points > 0) {
+          // Get all correct submissions for this user, sorted by time
+          const submissions = await Submission.find({
+            user: user._id,
+            isCorrect: true
+          }).select('submittedAt points').sort({ submittedAt: 1 }).lean();
+
+          // Calculate cumulative score and find when they reached current score
+          let cumulativeScore = 0;
+          let reachedCurrentScoreAt = null;
+          
+          for (const sub of submissions) {
+            cumulativeScore += sub.points || 0;
+            if (cumulativeScore >= user.points) {
+              reachedCurrentScoreAt = sub.submittedAt;
+              break;
+            }
+          }
+          
+          user.tieBreakTime = reachedCurrentScoreAt || user.lastSolveTime || new Date();
+        } else {
+          user.tieBreakTime = new Date();
+        }
+      }
+
+      // Apply tie-breaking sort: score DESC, then tieBreakTime ASC
+      users.sort((a, b) => {
+        if (b.points !== a.points) {
+          return b.points - a.points; // Higher score first
+        }
+        // Same score - earlier time wins
+        return new Date(a.tieBreakTime) - new Date(b.tieBreakTime);
+      });
+
+      // Limit to top 100
+      users = users.slice(0, 100);
 
       // Cache for 30 seconds
       await redisClient.setex(cacheKey, 30, JSON.stringify(users));
@@ -776,12 +859,24 @@ router.get('/scoreboard/progression', protect, async (req, res) => {
         });
       }
 
-      // Get top N teams by final score
-      const teamFinalScores = Object.entries(teamScores).map(([teamId, scores]) => ({
-        teamId,
-        finalScore: scores[scores.length - 1]?.score || 0,
-        name: teamNames[teamId] || 'Unknown Team'
-      })).sort((a, b) => b.finalScore - a.finalScore).slice(0, parseInt(limit));
+      // Get top N teams by final score with tie-breaking
+      const teamFinalScores = Object.entries(teamScores).map(([teamId, scores]) => {
+        const finalScore = scores[scores.length - 1]?.score || 0;
+        // Find timestamp when team reached their final score
+        const reachedFinalScoreAt = scores.find(s => s.score >= finalScore)?.time || Date.now();
+        return {
+          teamId,
+          finalScore,
+          tieBreakTime: reachedFinalScoreAt,
+          name: teamNames[teamId] || 'Unknown Team'
+        };
+      }).sort((a, b) => {
+        // Tie-breaking: score DESC, then tieBreakTime ASC
+        if (b.finalScore !== a.finalScore) {
+          return b.finalScore - a.finalScore;
+        }
+        return a.tieBreakTime - b.tieBreakTime;
+      }).slice(0, parseInt(limit));
 
       // Format data for frontend
       const progressionData = teamFinalScores.map(team => ({
@@ -847,13 +942,25 @@ router.get('/scoreboard/progression', protect, async (req, res) => {
         });
       }
 
-      // Get top N users by final score
-      const userFinalScores = Object.entries(userScores).map(([userId, data]) => ({
-        userId,
-        username: data.username,
-        finalScore: data.scores[data.scores.length - 1]?.score || 0,
-        scores: data.scores
-      })).sort((a, b) => b.finalScore - a.finalScore).slice(0, parseInt(limit));
+      // Get top N users by final score with tie-breaking
+      const userFinalScores = Object.entries(userScores).map(([userId, data]) => {
+        const finalScore = data.scores[data.scores.length - 1]?.score || 0;
+        // Find timestamp when user reached their final score
+        const reachedFinalScoreAt = data.scores.find(s => s.score >= finalScore)?.time || Date.now();
+        return {
+          userId,
+          username: data.username,
+          finalScore,
+          tieBreakTime: reachedFinalScoreAt,
+          scores: data.scores
+        };
+      }).sort((a, b) => {
+        // Tie-breaking: score DESC, then tieBreakTime ASC
+        if (b.finalScore !== a.finalScore) {
+          return b.finalScore - a.finalScore;
+        }
+        return a.tieBreakTime - b.tieBreakTime;
+      }).slice(0, parseInt(limit));
 
       const progressionData = userFinalScores.map(user => ({
         id: user.userId,
