@@ -86,7 +86,6 @@ function TeamDetails() {
 
       <div className="team-details-header">
         <h1 className="team-name">{team.name}</h1>
-        {team.description && <p className="team-description">{team.description}</p>}
       </div>
 
       <div className="team-stats">
