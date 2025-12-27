@@ -40,12 +40,12 @@ function Scoreboard() {
       setUsers(filteredUsers);
       setLastUpdated(new Date());
       setError(null);
+      if (!isAutoRefresh) setLoading(false);
 
-      // Fetch score progression data
+      // Fetch score progression data asynchronously (non-blocking)
       if (!isAutoRefresh) {
         fetchProgressionData();
       }
-      if (!isAutoRefresh) setLoading(false);
     } catch (err) {
       if (err.response?.status === 401) {
         setError('Authentication required. Please log in.');
@@ -54,6 +54,11 @@ function Scoreboard() {
         setError(err.response.data.message);
       } else if (!isAutoRefresh) {
         setError('Failed to fetch scoreboard data');
+      }
+      if (!isAutoRefresh) setLoading(false);
+    }
+  };
+
   const fetchProgressionData = async () => {
     try {
       const config = {
@@ -69,17 +74,12 @@ function Scoreboard() {
       // Don't show error to user, just fail silently for graph
     }
   };
-useEffect(() => {
+
+  useEffect(() => {
     if (isAuthenticated && token) {
       fetchProgressionData();
     }
   }, [viewType, isAuthenticated, token]);
-
-  
-      }
-      if (!isAutoRefresh) setLoading(false);
-    }
-  };
 
   useEffect(() => {
     fetchScoreboard();
