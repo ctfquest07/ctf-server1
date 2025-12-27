@@ -104,14 +104,16 @@
 
 .stat-value {
   color: #ffffff;
-  font-size: 2.2rem;
+  font-size: 2.2rem !important;
   font-weight: 700;
   letter-spacing: -0.8px;
+  line-height: 1;
 }
 
 .stat-value.points {
   color: #00ffaa;
   text-shadow: 0 0 15px rgba(0, 255, 170, 0.3);
+  font-size: 2.2rem !important;
 }
 
 .team-members-section {
