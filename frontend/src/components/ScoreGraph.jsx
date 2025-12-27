@@ -58,6 +58,8 @@ function ScoreGraph({ data, type }) {
     // Take top 10 users/teams in the order received
     const topItems = items.slice(0, 10);
 
+    console.log('Top Items Order:', topItems.map((item, idx) => `${idx + 1}. ${item.name}`));
+
     // Get all unique timestamps and sort them
     const allTimestamps = new Set();
     topItems.forEach(item => {
@@ -136,7 +138,8 @@ function ScoreGraph({ data, type }) {
           usePointStyle: true,
           pointStyle: 'line',
           boxWidth: 30,
-          boxHeight: 3
+          boxHeight: 3,
+          sort: () => 0 // Prevent sorting, maintain dataset order
         },
         onClick: (e, legendItem, legend) => {
           const index = legendItem.datasetIndex;
