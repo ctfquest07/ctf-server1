@@ -1811,6 +1811,13 @@ router.post('/admin/reset-points', protect, authorize('admin', 'superadmin'), as
     // Clear all submissions
     await Submission.deleteMany({});
 
+    // Clear solvedBy arrays from all challenges
+    const Challenge = require('../models/Challenge');
+    await Challenge.updateMany(
+      {},
+      { $set: { solvedBy: [] } }
+    );
+
     // Clear Redis cache
     try {
       await redisClient.flushall();
@@ -1870,6 +1877,13 @@ router.post('/admin/reset-challenges', protect, authorize('admin', 'superadmin')
 
     // Delete all submissions
     await Submission.deleteMany({});
+
+    // Clear solvedBy arrays from all challenges
+    const Challenge = require('../models/Challenge');
+    await Challenge.updateMany(
+      {},
+      { $set: { solvedBy: [] } }
+    );
 
     // Clear Redis cache
     try {

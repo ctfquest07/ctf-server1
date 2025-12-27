@@ -73,10 +73,21 @@ function TeamDetails() {
   // Sort members by points (highest first)
   const sortedMembers = [...team.members].sort((a, b) => (b.points || 0) - (a.points || 0));
   
-  // Captain is either set in the database or defaults to highest scorer
-  const captain = team.captain 
-    ? team.members.find(m => m._id === team.captain) 
-    : sortedMembers[0];
+  // Captain is either from the database (already populated) or defaults to highest scorer
+  let captain = null;
+  if (team.captain) {
+    // If captain is populated as an object with _id
+    if (typeof team.captain === 'object' && team.captain._id) {
+      captain = team.captain;
+    } else {
+      // If captain is just an ID string, find it in members
+      captain = team.members.find(m => m._id === team.captain || m._id.toString() === team.captain.toString());
+    }
+  }
+  // If no captain set, default to highest scorer
+  if (!captain) {
+    captain = sortedMembers[0];
+  }
 
   return (
     <div className="team-details-container">
@@ -121,9 +132,9 @@ function TeamDetails() {
         )}
 
         <div className="members-list">
-          {sortedMembers.slice(1).map((member, index) => (
+          {sortedMembers.filter(m => m._id !== captain?._id).map((member, index) => (
             <div key={member._id} className="member-card">
-              <div className="member-rank">#{index + 2}</div>
+              <div className="member-rank">#{sortedMembers.findIndex(sm => sm._id === member._id) + 1}</div>
               <div className="member-info">
                 <div className="member-name">{member.username}</div>
                 <div className="member-email">{member.email}</div>
