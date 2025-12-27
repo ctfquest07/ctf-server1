@@ -7,12 +7,13 @@ import './AdminCreateTeam.css';
 function AdminCreateTeam() {
   const { isAuthenticated, user, token } = useContext(AuthContext);
   const navigate = useNavigate();
-  const MAX_TEAM_MEMBERS = 2; // Can be fetched from API config if needed
+  const DEFAULT_MAX_MEMBERS = 2;
 
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    members: []
+    members: [],
+    maxMembers: DEFAULT_MAX_MEMBERS
   });
 
   const [users, setUsers] = useState([]);
@@ -90,8 +91,8 @@ function AdminCreateTeam() {
         };
       } else {
         // Add member only if under limit
-        if (prev.members.length >= MAX_TEAM_MEMBERS) {
-          setError(`Maximum ${MAX_TEAM_MEMBERS} members allowed per team`);
+        if (prev.members.length >= prev.maxMembers) {
+          setError(`Maximum ${prev.maxMembers} members allowed per team`);
           return prev;
         }
         return {
@@ -109,13 +110,18 @@ function AdminCreateTeam() {
       return false;
     }
 
+    if (!formData.maxMembers || formData.maxMembers < 1) {
+      setError('Max members must be at least 1');
+      return false;
+    }
+
     if (formData.members.length < 1) {
       setError('Please select at least 1 member for the team');
       return false;
     }
 
-    if (formData.members.length > MAX_TEAM_MEMBERS) {
-      setError(`Teams can have maximum ${MAX_TEAM_MEMBERS} members`);
+    if (formData.members.length > formData.maxMembers) {
+      setError(`Teams can have maximum ${formData.maxMembers} members`);
       return false;
     }
 
@@ -144,7 +150,8 @@ function AdminCreateTeam() {
         {
           name: formData.name,
           description: formData.description,
-          members: formData.members
+          members: formData.members,
+          maxMembers: formData.maxMembers
         },
         config
       );
@@ -153,7 +160,8 @@ function AdminCreateTeam() {
       setFormData({
         name: '',
         description: '',
-        members: []
+        members: [],
+        maxMembers: DEFAULT_MAX_MEMBERS
       });
 
       setTimeout(() => {
@@ -181,7 +189,7 @@ function AdminCreateTeam() {
       <div className="create-team-container">
         <div className="create-team-header">
           <h1>Create New <span className="highlight">Team</span></h1>
-          <p>Add a new team with 1-{MAX_TEAM_MEMBERS} members</p>
+          <p>Add a new team with configurable member limit</p>
         </div>
 
         {error && <div className="error-message">{error}</div>}
@@ -214,8 +222,25 @@ function AdminCreateTeam() {
           </div>
 
           <div className="form-group">
+            <label htmlFor="maxMembers">Maximum Members *</label>
+            <input
+              type="number"
+              id="maxMembers"
+              name="maxMembers"
+              value={formData.maxMembers}
+              onChange={handleChange}
+              min="1"
+              max="10"
+              required
+            />
+            <span className="form-hint">
+              Set the maximum number of members allowed in this team (1-10)
+            </span>
+          </div>
+
+          <div className="form-group">
             <label htmlFor="members">
-              Select Members * ({formData.members.length}/{MAX_TEAM_MEMBERS} selected)
+              Select Members * ({formData.members.length}/{formData.maxMembers} selected)
             </label>
             <input
               type="text"
@@ -230,7 +255,7 @@ function AdminCreateTeam() {
               ) : (
                 filteredUsers.map(u => {
                   const isSelected = formData.members.includes(u._id);
-                  const isDisabled = !isSelected && formData.members.length >= MAX_TEAM_MEMBERS;
+                  const isDisabled = !isSelected && formData.members.length >= formData.maxMembers;
                   
                   return (
                     <label
@@ -253,7 +278,7 @@ function AdminCreateTeam() {
               )}
             </div>
             <span className="form-hint">
-              {filteredUsers.length} users available • Maximum {MAX_TEAM_MEMBERS} members per team
+              {filteredUsers.length} users available • Maximum {formData.maxMembers} members per team
             </span>
           </div>
 

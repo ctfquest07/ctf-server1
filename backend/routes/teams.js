@@ -9,8 +9,8 @@ const { protect, authorize } = require('../middleware/auth');
 // @access  Private/Admin
 router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => {
   try {
-    const { name, description, members } = req.body;
-    const MAX_TEAM_MEMBERS = parseInt(process.env.MAX_TEAM_MEMBERS) || 2;
+    const { name, description, members, maxMembers } = req.body;
+    const MAX_TEAM_MEMBERS = maxMembers || parseInt(process.env.MAX_TEAM_MEMBERS) || 2;
 
     if (!name) {
       return res.status(400).json({
