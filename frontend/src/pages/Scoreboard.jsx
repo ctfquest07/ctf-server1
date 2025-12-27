@@ -129,8 +129,8 @@ function Scoreboard() {
         </button>
       </div>
 
-      {/* Score Progression Graph */}
-      {progressionData && (
+      {/* Score Progression Graph - Only show for teams */}
+      {progressionData && viewType === 'teams' && (
         <ScoreGraph data={progressionData} type={viewType} />
       )}
 
