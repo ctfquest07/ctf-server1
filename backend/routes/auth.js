@@ -1777,4 +1777,128 @@ router.put('/admin/change-password', protect, authorize('admin', 'superadmin'), 
   }
 });
 
+// @route   POST /api/auth/admin/reset-points
+// @desc    Reset all user points to 0
+// @access  Private/Admin
+router.post('/admin/reset-points', protect, authorize('admin', 'superadmin'), async (req, res) => {
+  try {
+    const Submission = require('../models/Submission');
+    
+    // Reset all user points to 0 and clear solvedChallenges
+    const result = await User.updateMany(
+      { role: 'user' },
+      { 
+        $set: { 
+          points: 0, 
+          solvedChallenges: [],
+          lastSolveTime: null
+        } 
+      }
+    );
+
+    // Reset all team points and solvedChallenges
+    const Team = require('../models/Team');
+    await Team.updateMany(
+      {},
+      { 
+        $set: { 
+          points: 0,
+          solvedChallenges: []
+        }
+      }
+    );
+
+    // Clear all submissions
+    await Submission.deleteMany({});
+
+    // Clear Redis cache
+    try {
+      await redisClient.flushall();
+    } catch (cacheErr) {
+      console.warn('Redis cache clear error:', cacheErr);
+    }
+
+    logActivity('POINTS_RESET', { 
+      adminId: req.user._id, 
+      adminUsername: req.user.username,
+      usersAffected: result.modifiedCount 
+    });
+
+    res.json({
+      success: true,
+      message: `Successfully reset points for ${result.modifiedCount} users and all teams`,
+      usersAffected: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Error resetting points:', error);
+    res.status(500).json({
+      success: false,
+      message: process.env.NODE_ENV === 'development' ?
+        `Error resetting points: ${error.message}` :
+        'Error resetting points. Please try again.'
+    });
+  }
+});
+
+// @route   POST /api/auth/admin/reset-challenges
+// @desc    Reset all challenge solved status (keep points)
+// @access  Private/Admin
+router.post('/admin/reset-challenges', protect, authorize('admin', 'superadmin'), async (req, res) => {
+  try {
+    const Submission = require('../models/Submission');
+    
+    // Clear solvedChallenges from all users but keep points and lastSolveTime
+    const result = await User.updateMany(
+      { role: 'user' },
+      { 
+        $set: { 
+          solvedChallenges: []
+        } 
+      }
+    );
+
+    // Clear solvedChallenges from all teams but keep points
+    const Team = require('../models/Team');
+    await Team.updateMany(
+      {},
+      { 
+        $set: { 
+          solvedChallenges: []
+        }
+      }
+    );
+
+    // Delete all submissions
+    await Submission.deleteMany({});
+
+    // Clear Redis cache
+    try {
+      await redisClient.flushall();
+    } catch (cacheErr) {
+      console.warn('Redis cache clear error:', cacheErr);
+    }
+
+    logActivity('CHALLENGES_RESET', { 
+      adminId: req.user._id, 
+      adminUsername: req.user.username,
+      usersAffected: result.modifiedCount 
+    });
+
+    res.json({
+      success: true,
+      message: `Successfully reset challenge status for ${result.modifiedCount} users (points preserved)`,
+      usersAffected: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Error resetting challenges:', error);
+    res.status(500).json({
+      success: false,
+      message: process.env.NODE_ENV === 'development' ?
+        `Error resetting challenges: ${error.message}` :
+        'Error resetting challenges. Please try again.'
+    });
+  }
+});
+
 module.exports = router;
+

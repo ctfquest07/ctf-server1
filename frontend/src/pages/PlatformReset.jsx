@@ -11,21 +11,22 @@ function PlatformReset() {
   const [isResetting, setIsResetting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [resetType, setResetType] = useState('');
 
-  const handleReset = async (e) => {
-    e.preventDefault();
-    
+  const handleResetPoints = async () => {
     if (secretCode !== '97086') {
       setError('Invalid secret code');
       return;
     }
 
-    if (!window.confirm('Are you sure you want to reset the entire platform? This will:\n\n• Reset all user points to 0\n• Mark all challenges as unsolved\n• Clear all scoreboard data\n\nThis action cannot be undone!')) {
+    if (!window.confirm('Are you sure you want to reset all points? This will:\n\n• Reset all user points to 0\n• Reset all team points to 0\n• Clear all solved challenges\n• Delete all submissions\n\nThis action cannot be undone!')) {
       return;
     }
 
     setIsResetting(true);
     setError('');
+    setSuccess('');
+    setResetType('points');
 
     try {
       const config = {
@@ -34,18 +35,49 @@ function PlatformReset() {
         }
       };
 
-      await axios.post('/api/auth/reset-platform', {}, config);
+      const response = await axios.post('/api/auth/admin/reset-points', {}, config);
       
-      setSuccess('Platform reset successfully! All data has been cleared.');
+      setSuccess(response.data.message || 'Points reset successfully!');
       setSecretCode('');
-      
-      setTimeout(() => {
-        navigate('/admin');
-      }, 3000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to reset platform');
+      setError(err.response?.data?.message || 'Failed to reset points');
     } finally {
       setIsResetting(false);
+      setResetType('');
+    }
+  };
+
+  const handleResetChallenges = async () => {
+    if (secretCode !== '97086') {
+      setError('Invalid secret code');
+      return;
+    }
+
+    if (!window.confirm('Are you sure you want to reset challenge solved status? This will:\n\n• Clear all solved challenges from users/teams\n• Delete all submissions\n• Keep user points unchanged\n\nThis action cannot be undone!')) {
+      return;
+    }
+
+    setIsResetting(true);
+    setError('');
+    setSuccess('');
+    setResetType('challenges');
+
+    try {
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      };
+
+      const response = await axios.post('/api/auth/admin/reset-challenges', {}, config);
+      
+      setSuccess(response.data.message || 'Challenge status reset successfully!');
+      setSecretCode('');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to reset challenges');
+    } finally {
+      setIsResetting(false);
+      setResetType('');
     }
   };
 
@@ -53,56 +85,85 @@ function PlatformReset() {
     <div className="admin-dashboard">
       <div className="dashboard-header">
         <h1>Platform <span className="highlight">Reset</span></h1>
-        <p>Reset the entire platform to fresh state</p>
+        <p>Reset platform data - Choose your reset option</p>
       </div>
 
       <div className="dashboard-section">
         <div className="reset-warning">
           <h2>⚠️ DANGER ZONE</h2>
-          <p>This action will completely reset the platform:</p>
-          <ul>
-            <li>All user points will be set to 0</li>
-            <li>All challenges will be marked as unsolved</li>
-            <li>Scoreboard will be cleared</li>
-            <li>All progress will be lost permanently</li>
-          </ul>
+          <p>These actions will permanently modify platform data. Use with caution!</p>
         </div>
 
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
 
-        <form onSubmit={handleReset} className="reset-form">
-          <div className="form-group">
-            <label htmlFor="secretCode">Enter Secret Code:</label>
-            <input
-              type="password"
-              id="secretCode"
-              value={secretCode}
-              onChange={(e) => setSecretCode(e.target.value)}
-              placeholder="Enter secret code to proceed"
-              required
-              disabled={isResetting}
-            />
-          </div>
+        <div className="form-group">
+          <label htmlFor="secretCode">Enter Secret Code to Enable Reset Actions:</label>
+          <input
+            type="password"
+            id="secretCode"
+            value={secretCode}
+            onChange={(e) => {
+              setSecretCode(e.target.value);
+              setError('');
+            }}
+            placeholder="Enter secret code (97086)"
+            disabled={isResetting}
+            style={{ marginBottom: '2rem' }}
+          />
+        </div>
 
-          <div className="form-actions">
+        <div className="reset-options">
+          <div className="reset-option-card">
+            <h3>🔄 Reset All Points</h3>
+            <p>This will:</p>
+            <ul>
+              <li>Reset all user points to 0</li>
+              <li>Reset all team points to 0</li>
+              <li>Clear all solved challenges</li>
+              <li>Delete all submissions</li>
+              <li>Clear scoreboard data</li>
+            </ul>
             <button
-              type="button"
-              onClick={() => navigate('/admin')}
-              className="btn-secondary"
-              disabled={isResetting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
+              onClick={handleResetPoints}
               className="btn-danger"
               disabled={isResetting || !secretCode}
+              style={{ width: '100%', marginTop: '1rem' }}
             >
-              {isResetting ? 'Resetting...' : 'Reset Platform'}
+              {isResetting && resetType === 'points' ? 'Resetting Points...' : 'Reset All Points'}
             </button>
           </div>
-        </form>
+
+          <div className="reset-option-card">
+            <h3>🎯 Reset Challenge Status Only</h3>
+            <p>This will:</p>
+            <ul>
+              <li>Clear all solved challenges from users/teams</li>
+              <li>Delete all submissions</li>
+              <li><strong>Keep user points unchanged</strong></li>
+              <li>Users can re-solve challenges</li>
+            </ul>
+            <button
+              onClick={handleResetChallenges}
+              className="btn-warning"
+              disabled={isResetting || !secretCode}
+              style={{ width: '100%', marginTop: '1rem' }}
+            >
+              {isResetting && resetType === 'challenges' ? 'Resetting Challenges...' : 'Reset Challenge Status'}
+            </button>
+          </div>
+        </div>
+
+        <div className="form-actions" style={{ marginTop: '2rem' }}>
+          <button
+            type="button"
+            onClick={() => navigate('/admin')}
+            className="btn-secondary"
+            disabled={isResetting}
+          >
+            ← Back to Dashboard
+          </button>
+        </div>
       </div>
     </div>
   );

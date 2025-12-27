@@ -2970,6 +2970,76 @@ input[type="url"]::placeholder {
   cursor: not-allowed;
 }
 
+.reset-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.reset-option-card {
+  background: linear-gradient(135deg, rgba(26, 46, 70, 0.6), rgba(15, 25, 35, 0.8));
+  border: 1px solid rgba(0, 255, 170, 0.2);
+  border-radius: 12px;
+  padding: 2rem;
+  transition: all 0.3s ease;
+}
+
+.reset-option-card:hover {
+  border-color: rgba(0, 255, 170, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 255, 170, 0.15);
+}
+
+.reset-option-card h3 {
+  color: #ffffff;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.reset-option-card p {
+  color: #a0a0a0;
+  margin-bottom: 0.5rem;
+}
+
+.reset-option-card ul {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+  list-style-type: disc;
+}
+
+.reset-option-card li {
+  margin: 0.5rem 0;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.reset-option-card li strong {
+  color: #00ffaa;
+}
+
+.btn-warning {
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f57c00, #e65100);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+}
+
+.btn-warning:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
 .tab-button.danger {
   background: rgba(255, 68, 68, 0.1);
   color: #ff4444;
