@@ -670,9 +670,6 @@ router.get('/scoreboard', protect, async (req, res) => {
         return new Date(a.tieBreakTime) - new Date(b.tieBreakTime);
       });
 
-      // Limit to top 20
-      teamsWithPoints = teamsWithPoints.slice(0, 20);
-
       // Cache for 30 seconds
       await redisClient.setex(cacheKey, 30, JSON.stringify(teamsWithPoints));
 
