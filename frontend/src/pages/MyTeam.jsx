@@ -1,0 +1,77 @@
+import { useEffect, useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import AuthContext from '../context/AuthContext';
+import './MyTeam.css';
+
+function MyTeam() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { token, isAuthenticated } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchMyTeam = async () => {
+      if (!isAuthenticated) {
+        navigate('/login');
+        return;
+      }
+
+      try {
+        const config = {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        };
+
+        const response = await axios.get('/api/teams/my/team', config);
+        
+        if (response.data.success && response.data.data) {
+          // Redirect to the team details page
+          navigate(`/team/${response.data.data._id}`);
+        }
+      } catch (err) {
+        if (err.response?.status === 404) {
+          setError('You are not part of any team yet.');
+        } else if (err.response?.status === 401) {
+          setError('Please log in to view your team.');
+          navigate('/login');
+        } else {
+          setError('Failed to fetch your team information.');
+        }
+        setLoading(false);
+      }
+    };
+
+    fetchMyTeam();
+  }, [isAuthenticated, token, navigate]);
+
+  if (loading) {
+    return (
+      <div className="my-team-container">
+        <div className="loading">Loading your team...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="my-team-container">
+        <div className="error-container">
+          <div className="error-icon">
+            <i className="fas fa-users-slash"></i>
+          </div>
+          <h2>No Team Found</h2>
+          <p>{error}</p>
+          <button onClick={() => navigate('/scoreboard')} className="back-button">
+            View Scoreboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+export default MyTeam;

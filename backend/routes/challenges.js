@@ -368,14 +368,30 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
           { session }
         );
 
-        // If user has a team, update team as well
+        // If user has a team, update team AND all team members
         if (user.team) {
           const Team = require('../models/Team');
+          
+          // Update the team
           await Team.findByIdAndUpdate(
             user.team._id,
             {
               $addToSet: { solvedChallenges: challenge._id },
               $inc: { points: challenge.points }
+            },
+            { session }
+          );
+
+          // Update ALL team members to mark this challenge as solved
+          // This prevents other team members from solving it again
+          await User.updateMany(
+            { 
+              team: user.team._id,
+              _id: { $ne: req.user._id } // Exclude current user (already updated above)
+            },
+            {
+              $addToSet: { solvedChallenges: challenge._id }
+              // Don't give points to other team members, only to the solver and team
             },
             { session }
           );

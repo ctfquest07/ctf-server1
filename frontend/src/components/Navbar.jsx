@@ -94,6 +94,9 @@ function Navbar() {
             {isAuthenticated && (
               <li><Link to="/scoreboard" className={`nav-link ${isActiveLink('/scoreboard') ? 'active' : ''}`}>Scoreboard</Link></li>
             )}
+            {isAuthenticated && (
+              <li><Link to="/my-team" className={`nav-link ${isActiveLink('/my-team') ? 'active' : ''}`}>My Team</Link></li>
+            )}
             {user?.role === 'admin' && (
               <li className="admin-dropdown">
                 <span className="nav-link admin-trigger">Admin <i className="fas fa-chevron-down"></i></span>
@@ -152,6 +155,17 @@ function Navbar() {
                       >
                         <i className="fas fa-flag"></i>
                         Challenges
+                      </Link>
+                    )}
+                    {isAuthenticated && (
+                      <Link 
+                        to="/my-team" 
+                        className="dropdown-item" 
+                        onClick={() => setIsDropdownOpen(false)}
+                        role="menuitem"
+                      >
+                        <i className="fas fa-users"></i>
+                        My Team
                       </Link>
                     )}
 

@@ -80,6 +80,45 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
   }
 });
 
+// @route   GET /api/teams/my/team
+// @desc    Get current user's team
+// @access  Private
+router.get('/my/team', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('team');
+    
+    if (!user || !user.team) {
+      return res.status(404).json({
+        success: false,
+        message: 'You are not part of any team'
+      });
+    }
+
+    const team = await Team.findById(user.team)
+      .populate('members', 'username email points solvedChallenges')
+      .populate('captain', 'username email points solvedChallenges')
+      .populate('createdBy', 'username');
+
+    if (!team) {
+      return res.status(404).json({
+        success: false,
+        message: 'Team not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: team
+    });
+  } catch (error) {
+    console.error('Error fetching user team:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching team'
+    });
+  }
+});
+
 // @route   GET /api/teams
 // @desc    Get all teams with pagination
 // @access  Private

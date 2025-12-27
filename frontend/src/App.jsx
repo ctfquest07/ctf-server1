@@ -45,6 +45,7 @@ import Analytics from './pages/Analytics'
 import AdminSubmissions from './pages/AdminSubmissions'
 import UserProfile from './pages/UserProfile'
 import AdminLiveMonitor from './pages/AdminLiveMonitor'
+import MyTeam from './pages/MyTeam'
 
 function App() {
   useEffect(() => {
@@ -114,6 +115,11 @@ function App() {
               <Route path="/team/:id" element={
                 <ProtectedRoute>
                   <TeamDetails />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-team" element={
+                <ProtectedRoute>
+                  <MyTeam />
                 </ProtectedRoute>
               } />
               <Route path="/user/:userId" element={
