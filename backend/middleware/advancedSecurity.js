@@ -39,10 +39,10 @@ const createAdvancedRateLimit = (windowMs, max, message, skipSuccessfulRequests 
   });
 };
 
-// Relaxed limits for UX
+// Relaxed limits for UX - very high for NAT/shared IPs in competitions
 const strictLoginLimiter = createAdvancedRateLimit(
   15 * 60 * 1000, // 15 minutes
-  100, // Relaxed to 100 for heavy competition traffic
+  1000, // Very high limit for shared IPs (600+ users competition)
   'Too many login attempts. Please wait a moment.',
   false
 );
