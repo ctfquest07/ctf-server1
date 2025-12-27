@@ -206,8 +206,8 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
       });
     }
 
-    // Get user
-    const user = await User.findById(req.user._id);
+    // Get user with team
+    const user = await User.findById(req.user._id).populate('team');
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -236,14 +236,24 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
       });
     }
 
-    // Check if already solved
-    const alreadySolved = user.solvedChallenges.some(
+    // Check if already solved by user OR their team
+    let alreadySolved = user.solvedChallenges.some(
       id => id.toString() === challenge._id.toString()
     );
+
+    // If user has a team, check if team has already solved it
+    if (!alreadySolved && user.team) {
+      const Team = require('../models/Team');
+      const team = await Team.findById(user.team._id);
+      if (team && team.solvedChallenges.some(id => id.toString() === challenge._id.toString())) {
+        alreadySolved = true;
+      }
+    }
+
     if (alreadySolved) {
       return res.status(400).json({
         success: false,
-        message: 'You have already solved this challenge'
+        message: 'This challenge has already been solved by you or your team'
       });
     }
 
@@ -357,6 +367,19 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
           { $addToSet: { solvedBy: req.user._id } },
           { session }
         );
+
+        // If user has a team, update team as well
+        if (user.team) {
+          const Team = require('../models/Team');
+          await Team.findByIdAndUpdate(
+            user.team._id,
+            {
+              $addToSet: { solvedChallenges: challenge._id },
+              $inc: { points: challenge.points }
+            },
+            { session }
+          );
+        }
       });
     } finally {
       await session.endSession();
