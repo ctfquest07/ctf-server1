@@ -131,17 +131,8 @@ router.get('/:id', protect, async (req, res) => {
       });
     }
 
-    // Prevent IDOR - only team members and admins can view team details
-    const userId = req.user._id || req.user.id;
-    const isTeamMember = team.members.some(member => member._id.toString() === userId);
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
-    
-    if (!isTeamMember && !isAdmin) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have permission to view this team'
-      });
-    }
+    // Allow all authenticated users to view team details (public scoreboard)
+    // No IDOR restriction - teams are publicly viewable
 
     // Calculate team points from members
     const calculatedPoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);

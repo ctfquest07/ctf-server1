@@ -58,7 +58,11 @@ function ScoreGraph({ data, type }) {
     // Take top 10 users/teams in the order received
     const topItems = items.slice(0, 10);
 
-    console.log('Top Items Order:', topItems.map((item, idx) => `${idx + 1}. ${item.name}`));
+    console.log('Graph Data Order:');
+    topItems.forEach((item, idx) => {
+      const finalScore = item.data[item.data.length - 1]?.score || 0;
+      console.log(`${idx + 1}. ${item.name} - ${finalScore} points`);
+    });
 
     // Get all unique timestamps and sort them
     const allTimestamps = new Set();
@@ -128,6 +132,7 @@ function ScoreGraph({ data, type }) {
       legend: {
         display: true,
         position: 'bottom',
+        reverse: false, // Ensure not reversed
         labels: {
           color: '#e0e0e0',
           padding: 15,
@@ -139,7 +144,19 @@ function ScoreGraph({ data, type }) {
           pointStyle: 'line',
           boxWidth: 30,
           boxHeight: 3,
-          sort: () => 0 // Prevent sorting, maintain dataset order
+          generateLabels: function(chart) {
+            // Generate labels in dataset order (maintains backend sort order)
+            const datasets = chart.data.datasets;
+            return datasets.map((dataset, i) => ({
+              text: dataset.label,
+              fillStyle: dataset.borderColor,
+              strokeStyle: dataset.borderColor,
+              lineWidth: dataset.borderWidth,
+              hidden: !chart.isDatasetVisible(i),
+              index: i,
+              datasetIndex: i
+            }));
+          }
         },
         onClick: (e, legendItem, legend) => {
           const index = legendItem.datasetIndex;
