@@ -89,15 +89,15 @@ function TeamDetails() {
       </div>
 
       <div className="team-stats">
-        <div className="stat-card">
+        <div className="stat-card points-card">
           <div className="stat-label">Total Points</div>
           <div className="stat-value points">{team.points || 0}</div>
         </div>
-        <div className="stat-card">
+        <div className="stat-card members-card">
           <div className="stat-label">Team Members</div>
           <div className="stat-value">{team.members.length}</div>
         </div>
-        <div className="stat-card">
+        <div className="stat-card challenges-card">
           <div className="stat-label">Challenges Solved</div>
           <div className="stat-value">{team.solvedChallenges?.length || 0}</div>
         </div>
