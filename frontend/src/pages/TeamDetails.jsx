@@ -72,7 +72,11 @@ function TeamDetails() {
 
   // Sort members by points (highest first)
   const sortedMembers = [...team.members].sort((a, b) => (b.points || 0) - (a.points || 0));
-  const captain = sortedMembers[0]; // Highest scorer is captain
+  
+  // Captain is either set in the database or defaults to highest scorer
+  const captain = team.captain 
+    ? team.members.find(m => m._id === team.captain) 
+    : sortedMembers[0];
 
   return (
     <div className="team-details-container">
@@ -81,7 +85,6 @@ function TeamDetails() {
       </button>
 
       <div className="team-details-header">
-        <div className="team-icon">🏆</div>
         <h1 className="team-name">{team.name}</h1>
         {team.description && <p className="team-description">{team.description}</p>}
       </div>
@@ -106,7 +109,7 @@ function TeamDetails() {
         
         {captain && (
           <div className="member-card captain">
-            <div className="member-badge">👑 Captain</div>
+            <div className="member-badge">CAPTAIN</div>
             <div className="member-info">
               <div className="member-name">{captain.username}</div>
               <div className="member-email">{captain.email}</div>

@@ -9,7 +9,7 @@ const { protect, authorize } = require('../middleware/auth');
 // @access  Private/Admin
 router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => {
   try {
-    const { name, description, members, maxMembers } = req.body;
+    const { name, description, members, captain, maxMembers } = req.body;
     const MAX_TEAM_MEMBERS = maxMembers || parseInt(process.env.MAX_TEAM_MEMBERS) || 2;
 
     if (!name) {
@@ -40,12 +40,21 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
           message: 'One or more selected users are invalid or already in a team'
         });
       }
+
+      // Validate captain is in members list
+      if (captain && !members.includes(captain)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Captain must be a selected team member'
+        });
+      }
     }
 
     const team = await Team.create({
       name,
       description,
       members: members || [],
+      captain: captain || null,
       createdBy: req.user._id || req.user.id
     });
 
@@ -56,7 +65,7 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
       );
     }
 
-    const populatedTeam = await team.populate('members createdBy');
+    const populatedTeam = await team.populate('members createdBy captain');
 
     res.status(201).json({
       success: true,
@@ -83,6 +92,7 @@ router.get('/', protect, async (req, res) => {
     const total = await Team.countDocuments();
     const teams = await Team.find()
       .populate('members', 'username email points')
+      .populate('captain', 'username email points')
       .populate('createdBy', 'username')
       .sort({ points: -1 })
       .limit(limit)
@@ -111,6 +121,7 @@ router.get('/:id', protect, async (req, res) => {
   try {
     const team = await Team.findById(req.params.id)
       .populate('members', 'username email points solvedChallenges')
+      .populate('captain', 'username email points solvedChallenges')
       .populate('createdBy', 'username');
 
     if (!team) {

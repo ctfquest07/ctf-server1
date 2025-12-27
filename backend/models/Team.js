@@ -17,6 +17,10 @@ const TeamSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
+  captain: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

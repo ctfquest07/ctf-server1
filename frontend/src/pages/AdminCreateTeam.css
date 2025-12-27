@@ -195,6 +195,63 @@
   cursor: not-allowed;
 }
 
+/* Captain selection styles */
+.captain-selection {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: rgba(0, 255, 170, 0.05);
+  border: 1px solid rgba(0, 255, 170, 0.2);
+  border-radius: 8px;
+}
+
+.radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.radio-item {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(26, 46, 70, 0.4);
+  border: 2px solid rgba(0, 255, 170, 0.1);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.radio-item:hover {
+  background: rgba(0, 255, 170, 0.08);
+  border-color: rgba(0, 255, 170, 0.3);
+}
+
+.radio-item.selected {
+  background: rgba(0, 255, 170, 0.12);
+  border-color: #00ffaa;
+}
+
+.radio-item input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  margin-right: 1rem;
+  cursor: pointer;
+  accent-color: #00ffaa;
+}
+
+.radio-item .captain-badge {
+  background: #00ffaa;
+  color: #0a0e17;
+  padding: 0.35rem 0.85rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
+  margin-left: auto;
+}
+
 .checkbox-item .user-info {
   display: flex;
   flex-direction: column;

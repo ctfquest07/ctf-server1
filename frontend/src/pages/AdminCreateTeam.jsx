@@ -13,6 +13,7 @@ function AdminCreateTeam() {
     name: '',
     description: '',
     members: [],
+    captain: '',
     maxMembers: DEFAULT_MAX_MEMBERS
   });
 
@@ -125,6 +126,16 @@ function AdminCreateTeam() {
       return false;
     }
 
+    if (!formData.captain) {
+      setError('Please select a team captain');
+      return false;
+    }
+
+    if (!formData.members.includes(formData.captain)) {
+      setError('Captain must be a selected team member');
+      return false;
+    }
+
     return true;
   };
 
@@ -151,6 +162,7 @@ function AdminCreateTeam() {
           name: formData.name,
           description: formData.description,
           members: formData.members,
+          captain: formData.captain,
           maxMembers: formData.maxMembers
         },
         config
@@ -161,6 +173,7 @@ function AdminCreateTeam() {
         name: '',
         description: '',
         members: [],
+        captain: '',
         maxMembers: DEFAULT_MAX_MEMBERS
       });
 
@@ -282,6 +295,44 @@ function AdminCreateTeam() {
             </span>
           </div>
 
+          {formData.members.length > 0 && (
+            <div className="form-group captain-selection">
+              <label htmlFor="captain">Select Team Captain *</label>
+              <div className="radio-list">
+                {formData.members.map(memberId => {
+                  const memberUser = users.find(u => u._id === memberId);
+                  return (
+                    <label
+                      key={memberId}
+                      className={`radio-item ${formData.captain === memberId ? 'selected' : ''}`}
+                    >
+                      <input
+                        type="radio"
+                        name="captain"
+                        value={memberId}
+                        checked={formData.captain === memberId}
+                        onChange={(e) => {
+                          setFormData({ ...formData, captain: e.target.value });
+                          setError('');
+                        }}
+                      />
+                      <div className="user-info">
+                        <span className="username">{memberUser?.username}</span>
+                        <span className="email">{memberUser?.email}</span>
+                      </div>
+                      {formData.captain === memberId && (
+                        <span className="captain-badge">CAPTAIN</span>
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+              <span className="form-hint">
+                The captain will be the team leader and primary contact
+              </span>
+            </div>
+          )}
+
           <div className="members-preview">
             <h3>Selected Members ({formData.members.length}):</h3>
             <div className="members-list">
@@ -296,9 +347,11 @@ function AdminCreateTeam() {
                       <button
                         type="button"
                         onClick={() => {
+                          const newMembers = formData.members.filter(m => m !== memberId);
                           setFormData({
                             ...formData,
-                            members: formData.members.filter(m => m !== memberId)
+                            members: newMembers,
+                            captain: formData.captain === memberId ? '' : formData.captain
                           });
                         }}
                         className="remove-btn"
