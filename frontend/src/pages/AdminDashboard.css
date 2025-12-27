@@ -3051,6 +3051,22 @@ input[type="url"]::placeholder {
   border-color: rgba(255, 68, 68, 0.5);
 }
 
+.tab-button.warning {
+  background: rgba(255, 152, 0, 0.1);
+  color: #ff9800;
+  border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.tab-button.warning:hover:not(:disabled) {
+  background: rgba(255, 152, 0, 0.2);
+  border-color: rgba(255, 152, 0, 0.5);
+}
+
+.tab-button.warning:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .connection-controls {
   display: flex;
   flex-direction: column;
