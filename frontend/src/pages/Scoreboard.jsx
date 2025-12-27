@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
+import ScoreGraph from '../components/ScoreGraph';
 import './Scoreboard.css';
 
 function Scoreboard() {
@@ -11,6 +12,7 @@ function Scoreboard() {
   const [error, setError] = useState(null);
   const [viewType, setViewType] = useState('teams');
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [progressionData, setProgressionData] = useState(null);
   const { token, isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -38,6 +40,11 @@ function Scoreboard() {
       setUsers(filteredUsers);
       setLastUpdated(new Date());
       setError(null);
+
+      // Fetch score progression data
+      if (!isAutoRefresh) {
+        fetchProgressionData();
+      }
       if (!isAutoRefresh) setLoading(false);
     } catch (err) {
       if (err.response?.status === 401) {
@@ -47,6 +54,28 @@ function Scoreboard() {
         setError(err.response.data.message);
       } else if (!isAutoRefresh) {
         setError('Failed to fetch scoreboard data');
+  const fetchProgressionData = async () => {
+    try {
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      };
+
+      const response = await axios.get(`/api/auth/scoreboard/progression?type=${viewType}&limit=10`, config);
+      setProgressionData(response.data.data);
+    } catch (err) {
+      console.error('Error fetching progression data:', err);
+      // Don't show error to user, just fail silently for graph
+    }
+  };
+useEffect(() => {
+    if (isAuthenticated && token) {
+      fetchProgressionData();
+    }
+  }, [viewType, isAuthenticated, token]);
+
+  
       }
       if (!isAutoRefresh) setLoading(false);
     }
@@ -78,7 +107,12 @@ function Scoreboard() {
     );
   }
 
-  return (
+  retu{/* Score Progression Graph */}
+      {progressionData && (
+        <ScoreGraph data={progressionData} type={viewType} />
+      )}
+
+      rn (
     <div className="scoreboard-container">
       <div className="scoreboard-header">
         <h1>Scoreboard</h1>

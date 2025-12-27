@@ -691,6 +691,186 @@ router.get('/scoreboard', protect, async (req, res) => {
   }
 });
 
+// @route   GET /api/auth/scoreboard/progression
+// @desc    Get score progression over time for top teams/users
+// @access  Private
+router.get('/scoreboard/progression', protect, async (req, res) => {
+  try {
+    const { type = 'teams', limit = 10 } = req.query;
+    const Submission = require('../models/Submission');
+    const Team = require('../models/Team');
+
+    // Check cache first
+    const cacheKey = `scoreboard:progression:${type}:${limit}`;
+    const CACHE_TTL = 60; // 60 seconds cache
+
+    try {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) {
+        return res.json({
+          success: true,
+          data: JSON.parse(cached),
+          cached: true
+        });
+      }
+    } catch (cacheErr) {
+      console.warn('Redis cache read error:', cacheErr);
+    }
+
+    if (type === 'teams') {
+      // Get all correct submissions sorted by time
+      const submissions = await Submission.find({ isCorrect: true })
+        .populate('user', 'team username')
+        .populate('challenge', 'points')
+        .sort({ submittedAt: 1 })
+        .lean();
+
+      // Build score progression for each team
+      const teamScores = {};
+      const teamNames = {};
+      const timePoints = new Set();
+
+      for (const sub of submissions) {
+        if (!sub.user?.team) continue;
+
+        const teamId = sub.user.team.toString();
+        const timestamp = new Date(sub.submittedAt).getTime();
+        
+        timePoints.add(timestamp);
+
+        if (!teamScores[teamId]) {
+          teamScores[teamId] = [];
+        }
+
+        const currentScore = teamScores[teamId].length > 0 
+          ? teamScores[teamId][teamScores[teamId].length - 1].score 
+          : 0;
+
+        teamScores[teamId].push({
+          time: timestamp,
+          score: currentScore + (sub.points || 0)
+        });
+
+        // Cache team name
+        if (!teamNames[teamId]) {
+          const team = await Team.findById(teamId).select('name').lean();
+          teamNames[teamId] = team?.name || 'Unknown Team';
+        }
+      }
+
+      // Get top N teams by final score
+      const teamFinalScores = Object.entries(teamScores).map(([teamId, scores]) => ({
+        teamId,
+        finalScore: scores[scores.length - 1]?.score || 0,
+        name: teamNames[teamId]
+      })).sort((a, b) => b.finalScore - a.finalScore).slice(0, parseInt(limit));
+
+      // Format data for frontend
+      const progressionData = teamFinalScores.map(team => ({
+        id: team.teamId,
+        name: team.name,
+        data: teamScores[team.teamId] || []
+      }));
+
+      const result = {
+        type: 'teams',
+        teams: progressionData,
+        startTime: Math.min(...timePoints),
+        endTime: Math.max(...timePoints)
+      };
+
+      // Cache result
+      try {
+        await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(result));
+      } catch (cacheErr) {
+        console.warn('Redis cache write error:', cacheErr);
+      }
+
+      res.json({
+        success: true,
+        data: result
+      });
+
+    } else {
+      // Users progression
+      const submissions = await Submission.find({ isCorrect: true })
+        .populate('user', 'username role showInScoreboard')
+        .populate('challenge', 'points')
+        .sort({ submittedAt: 1 })
+        .lean();
+
+      const userScores = {};
+      const timePoints = new Set();
+
+      for (const sub of submissions) {
+        if (!sub.user || sub.user.role === 'admin' || sub.user.showInScoreboard === false) continue;
+
+        const userId = sub.user._id.toString();
+        const timestamp = new Date(sub.submittedAt).getTime();
+        
+        timePoints.add(timestamp);
+
+        if (!userScores[userId]) {
+          userScores[userId] = {
+            username: sub.user.username,
+            scores: []
+          };
+        }
+
+        const currentScore = userScores[userId].scores.length > 0 
+          ? userScores[userId].scores[userScores[userId].scores.length - 1].score 
+          : 0;
+
+        userScores[userId].scores.push({
+          time: timestamp,
+          score: currentScore + (sub.points || 0)
+        });
+      }
+
+      // Get top N users by final score
+      const userFinalScores = Object.entries(userScores).map(([userId, data]) => ({
+        userId,
+        username: data.username,
+        finalScore: data.scores[data.scores.length - 1]?.score || 0,
+        scores: data.scores
+      })).sort((a, b) => b.finalScore - a.finalScore).slice(0, parseInt(limit));
+
+      const progressionData = userFinalScores.map(user => ({
+        id: user.userId,
+        name: user.username,
+        data: user.scores
+      }));
+
+      const result = {
+        type: 'users',
+        users: progressionData,
+        startTime: timePoints.size > 0 ? Math.min(...timePoints) : Date.now(),
+        endTime: timePoints.size > 0 ? Math.max(...timePoints) : Date.now()
+      };
+
+      // Cache result
+      try {
+        await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(result));
+      } catch (cacheErr) {
+        console.warn('Redis cache write error:', cacheErr);
+      }
+
+      res.json({
+        success: true,
+        data: result
+      });
+    }
+
+  } catch (error) {
+    console.error('Error fetching score progression:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching score progression',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // @route   GET /api/auth/users
 // @desc    Get all users with pagination (admin only)
 // @access  Private/Admin
