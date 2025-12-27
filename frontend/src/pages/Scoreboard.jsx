@@ -141,14 +141,6 @@ function Scoreboard() {
               <th className="rank-column">Rank</th>
               <th className="name-column">{viewType === 'teams' ? 'Team Name' : 'Username'}</th>
               <th className="points-column">Points</th>
-              {viewType === 'teams' ? (
-                <th className="members-column">Members</th>
-              ) : (
-                <th className="team-column">Team</th>
-              )}
-              {viewType === 'users' && (
-                <th className="challenges-column">Challenges Solved</th>
-              )}
             </tr>
           </thead>
           <tbody>
@@ -158,12 +150,12 @@ function Scoreboard() {
                   {index < 3 ? (
                     <div className={`rank-badge rank-${index + 1}`}>{index + 1}</div>
                   ) : (
-                    index + 1
+                    <span className="rank-number">{index + 1}</span>
                   )}
                 </td>
                 <td className="name-column">
                   {viewType === 'teams' ? (
-                    item.name
+                    <span className="team-name">{item.name}</span>
                   ) : (
                     <button 
                       className="username-link"
@@ -173,21 +165,9 @@ function Scoreboard() {
                     </button>
                   )}
                 </td>
-                <td className="points-column">{item.points || 0}</td>
-                {viewType === 'teams' ? (
-                  <td className="members-column">
-                    {item.members?.length || 0} / 2
-                  </td>
-                ) : (
-                  <td className="team-column">
-                    {item.team?.name || 'No Team'}
-                  </td>
-                )}
-                {viewType === 'users' && (
-                  <td className="challenges-column">
-                    {item.solvedChallenges?.length || 0}
-                  </td>
-                )}
+                <td className="points-column">
+                  <span className="points-value">{item.points || 0}</span>
+                </td>
               </tr>
             ))}
           </tbody>

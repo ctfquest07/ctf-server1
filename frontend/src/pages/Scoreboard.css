@@ -34,11 +34,11 @@
 }
 
 .scoreboard-table-container {
-  background-color: rgba(26, 46, 70, 0.5);
-  border-radius: 8px;
-  border: 1px solid #1a2e46;
+  background: linear-gradient(135deg, rgba(26, 46, 70, 0.6), rgba(15, 25, 35, 0.8));
+  border-radius: 12px;
+  border: 1px solid rgba(0, 255, 170, 0.3);
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 255, 255, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 255, 170, 0.15);
 }
 
 .scoreboard-table {
@@ -48,26 +48,32 @@
 
 .scoreboard-table th,
 .scoreboard-table td {
-  padding: 1rem;
+  padding: 1.25rem 1.5rem;
   text-align: left;
-  border-bottom: 1px solid #1a2e46;
+  border-bottom: 1px solid rgba(0, 255, 170, 0.1);
 }
 
 .scoreboard-table th {
-  background-color: rgba(15, 25, 35, 0.8);
-  color: #a0a0a0;
-  font-weight: 500;
+  background: linear-gradient(135deg, rgba(0, 255, 170, 0.15), rgba(0, 200, 150, 0.1));
+  color: #00ffaa;
+  font-weight: 600;
   text-transform: uppercase;
-  font-size: 0.9rem;
-  letter-spacing: 1px;
+  font-size: 0.85rem;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 10px rgba(0, 255, 170, 0.3);
+}
+
+.scoreboard-table tbody tr {
+  transition: all 0.3s ease;
 }
 
 .scoreboard-table tr:last-child td {
   border-bottom: none;
 }
 
-.scoreboard-table tr:hover {
-  background-color: rgba(0, 255, 170, 0.05);
+.scoreboard-table tbody tr:hover {
+  background-color: rgba(0, 255, 170, 0.08);
+  transform: translateX(5px);
 }
 
 .username-link {
@@ -88,16 +94,39 @@
   transform: scale(1.05);
 }
 
+.team-name {
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 1.05rem;
+}
+
+.points-value {
+  font-weight: 700;
+  color: #00ffaa;
+  font-size: 1.15rem;
+  text-shadow: 0 0 8px rgba(0, 255, 170, 0.4);
+}
+
 .rank-column {
-  width: 80px;
+  width: 100px;
   text-align: center;
 }
 
-.username-column {
+.rank-number {
+  display: inline-block;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #888;
+}
+
+.name-column {
+  width: 60%;
   font-weight: 600;
 }
 
 .points-column {
+  width: 25%;
+  text-align: right;
   font-weight: 600;
   color: #00ffaa;
 }
@@ -110,41 +139,54 @@
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  width: 30px;
-  height: 30px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 1.2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
 .rank-1 {
-  background: linear-gradient(135deg, #ffd700, #ffaa00);
-  color: #0a0e17;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #000;
+  border: 2px solid #FFD700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .rank-2 {
-  background: linear-gradient(135deg, #c0c0c0, #a0a0a0);
-  color: #0a0e17;
-  box-shadow: 0 0 10px rgba(192, 192, 192, 0.5);
+  background: linear-gradient(135deg, #E8E8E8, #C0C0C0);
+  color: #000;
+  border: 2px solid #C0C0C0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .rank-3 {
-  background: linear-gradient(135deg, #cd7f32, #a05a2c);
-  color: #0a0e17;
-  box-shadow: 0 0 10px rgba(205, 127, 50, 0.5);
+  background: linear-gradient(135deg, #CD7F32, #8B4513);
+  color: #fff;
+  border: 2px solid #CD7F32;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .top-1 {
-  background-color: rgba(255, 215, 0, 0.05);
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.05));
+  border-left: 3px solid #FFD700;
 }
 
 .top-2 {
-  background-color: rgba(192, 192, 192, 0.05);
+  background: linear-gradient(90deg, rgba(192, 192, 192, 0.15), rgba(192, 192, 192, 0.05));
+  border-left: 3px solid #C0C0C0;
 }
 
 .top-3 {
-  background-color: rgba(205, 127, 50, 0.05);
+  background: linear-gradient(90deg, rgba(205, 127, 50, 0.15), rgba(205, 127, 50, 0.05));
+  border-left: 3px solid #CD7F32;
 }
 
 .loading, .error {
