@@ -155,7 +155,12 @@ function Scoreboard() {
                 </td>
                 <td className="name-column">
                   {viewType === 'teams' ? (
-                    <span className="team-name">{item.name}</span>
+                    <button
+                      className="team-name-link"
+                      onClick={() => navigate(`/team/${item._id}`)}
+                    >
+                      {item.name}
+                    </button>
                   ) : (
                     <button 
                       className="username-link"

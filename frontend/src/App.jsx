@@ -28,6 +28,7 @@ import EditChallenge from './pages/EditChallenge'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminCreateUser from './pages/AdminCreateUser'
 import AdminCreateTeam from './pages/AdminCreateTeam'
+import TeamDetails from './pages/TeamDetails'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsOfService from './pages/TermsOfService'
 import Documentation from './pages/Documentation'
@@ -108,6 +109,11 @@ function App() {
               <Route path="/scoreboard" element={
                 <ProtectedRoute>
                   <Scoreboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/team/:id" element={
+                <ProtectedRoute>
+                  <TeamDetails />
                 </ProtectedRoute>
               } />
               <Route path="/user/:userId" element={
