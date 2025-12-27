@@ -45,7 +45,7 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
       name,
       description,
       members: members || [],
-      createdBy: req.user.id
+      createdBy: req.user._id || req.user.id
     });
 
     if (members && members.length === 2) {
@@ -120,7 +120,8 @@ router.get('/:id', protect, async (req, res) => {
     }
 
     // Prevent IDOR - only team members and admins can view team details
-    const isTeamMember = team.members.some(member => member._id.toString() === req.user.id);
+    const userId = req.user._id || req.user.id;
+    const isTeamMember = team.members.some(member => member._id.toString() === userId);
     const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
     
     if (!isTeamMember && !isAdmin) {

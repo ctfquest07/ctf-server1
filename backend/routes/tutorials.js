@@ -69,7 +69,7 @@ router.post('/', protect, authorize('admin'), async (req, res) => {
     console.log('Creating new tutorial:', req.body.title);
     
     // Add author to request body
-    req.body.author = req.user.id;
+    req.body.author = req.user._id || req.user.id;
     
     const tutorial = await Tutorial.create(req.body);
     console.log('Tutorial created successfully:', tutorial.title);
