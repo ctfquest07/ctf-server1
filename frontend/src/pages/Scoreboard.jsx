@@ -107,12 +107,7 @@ useEffect(() => {
     );
   }
 
-  retu{/* Score Progression Graph */}
-      {progressionData && (
-        <ScoreGraph data={progressionData} type={viewType} />
-      )}
-
-      rn (
+  return (
     <div className="scoreboard-container">
       <div className="scoreboard-header">
         <h1>Scoreboard</h1>
@@ -133,6 +128,11 @@ useEffect(() => {
           Users ({users.length})
         </button>
       </div>
+
+      {/* Score Progression Graph */}
+      {progressionData && (
+        <ScoreGraph data={progressionData} type={viewType} />
+      )}
 
       <div className="scoreboard-table-container">
         <table className="scoreboard-table">
