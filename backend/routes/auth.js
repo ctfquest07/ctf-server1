@@ -727,42 +727,60 @@ router.get('/scoreboard/progression', protect, async (req, res) => {
 
       // Build score progression for each team
       const teamScores = {};
-      const teamNames = {};
-      const timePoints = new Set();
+      const teamIds = new Set();
+      const allEvents = [];
 
       for (const sub of submissions) {
         if (!sub.user?.team) continue;
 
         const teamId = sub.user.team.toString();
         const timestamp = new Date(sub.submittedAt).getTime();
-        
-        timePoints.add(timestamp);
+        const points = sub.points || 0;
 
-        if (!teamScores[teamId]) {
-          teamScores[teamId] = [];
-        }
-
-        const currentScore = teamScores[teamId].length > 0 
-          ? teamScores[teamId][teamScores[teamId].length - 1].score 
-          : 0;
-
-        teamScores[teamId].push({
-          time: timestamp,
-          score: currentScore + (sub.points || 0)
+        teamIds.add(teamId);
+        allEvents.push({
+          teamId,
+          timestamp,
+          points
         });
+      }
 
-        // Cache team name
-        if (!teamNames[teamId]) {
-          const team = await Team.findById(teamId).select('name').lean();
-          teamNames[teamId] = team?.name || 'Unknown Team';
+      // Fetch all team names in one query
+      const teams = await Team.find({ _id: { $in: Array.from(teamIds) } })
+        .select('name')
+        .lean();
+      
+      const teamNames = {};
+      teams.forEach(team => {
+        teamNames[team._id.toString()] = team.name;
+      });
+
+      // Sort all events by timestamp
+      allEvents.sort((a, b) => a.timestamp - b.timestamp);
+
+      // Build cumulative scores
+      const teamCurrentScores = {};
+      for (const event of allEvents) {
+        if (!teamCurrentScores[event.teamId]) {
+          teamCurrentScores[event.teamId] = 0;
         }
+        teamCurrentScores[event.teamId] += event.points;
+
+        if (!teamScores[event.teamId]) {
+          teamScores[event.teamId] = [];
+        }
+
+        teamScores[event.teamId].push({
+          time: event.timestamp,
+          score: teamCurrentScores[event.teamId]
+        });
       }
 
       // Get top N teams by final score
       const teamFinalScores = Object.entries(teamScores).map(([teamId, scores]) => ({
         teamId,
         finalScore: scores[scores.length - 1]?.score || 0,
-        name: teamNames[teamId]
+        name: teamNames[teamId] || 'Unknown Team'
       })).sort((a, b) => b.finalScore - a.finalScore).slice(0, parseInt(limit));
 
       // Format data for frontend
@@ -772,11 +790,13 @@ router.get('/scoreboard/progression', protect, async (req, res) => {
         data: teamScores[team.teamId] || []
       }));
 
+      const allTimestamps = allEvents.map(e => e.timestamp);
       const result = {
         type: 'teams',
         teams: progressionData,
-        startTime: Math.min(...timePoints),
-        endTime: Math.max(...timePoints)
+        startTime: allTimestamps.length > 0 ? Math.min(...allTimestamps) : Date.now(),
+        endTime: allTimestamps.length > 0 ? Math.max(...allTimestamps) : Date.now(),
+        totalTeams: Object.keys(teamScores).length
       };
 
       // Cache result
