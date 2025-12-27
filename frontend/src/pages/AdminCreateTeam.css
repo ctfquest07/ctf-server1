@@ -112,6 +112,113 @@
   color: #00ffaa;
 }
 
+.search-input {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: rgba(15, 25, 35, 0.8);
+  border: 1px solid rgba(0, 255, 170, 0.3);
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.95rem;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #00ffaa;
+  box-shadow: 0 0 10px rgba(0, 255, 170, 0.3);
+}
+
+.checkbox-list {
+  max-height: 400px;
+  overflow-y: auto;
+  background: rgba(15, 25, 35, 0.6);
+  border: 1px solid rgba(0, 255, 170, 0.3);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.checkbox-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.checkbox-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.checkbox-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 170, 0.3);
+  border-radius: 4px;
+}
+
+.checkbox-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 170, 0.5);
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  margin: 0.25rem 0;
+  background: rgba(26, 46, 70, 0.4);
+  border: 1px solid rgba(0, 255, 170, 0.1);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.checkbox-item:hover:not(.disabled) {
+  background: rgba(0, 255, 170, 0.1);
+  border-color: rgba(0, 255, 170, 0.3);
+}
+
+.checkbox-item.selected {
+  background: rgba(0, 255, 170, 0.15);
+  border-color: #00ffaa;
+}
+
+.checkbox-item.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.checkbox-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-right: 1rem;
+  cursor: pointer;
+  accent-color: #00ffaa;
+}
+
+.checkbox-item.disabled input[type="checkbox"] {
+  cursor: not-allowed;
+}
+
+.checkbox-item .user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.checkbox-item .username {
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.checkbox-item .email {
+  color: #a0a0a0;
+  font-size: 0.85rem;
+}
+
+.no-users {
+  color: #a0a0a0;
+  text-align: center;
+  padding: 2rem;
+  font-style: italic;
+}
+
 .form-hint {
   display: block;
   margin-top: 0.5rem;

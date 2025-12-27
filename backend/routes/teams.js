@@ -10,6 +10,7 @@ const { protect, authorize } = require('../middleware/auth');
 router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => {
   try {
     const { name, description, members } = req.body;
+    const MAX_TEAM_MEMBERS = parseInt(process.env.MAX_TEAM_MEMBERS) || 2;
 
     if (!name) {
       return res.status(400).json({
@@ -18,10 +19,10 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
       });
     }
 
-    if (members && members.length !== 2) {
+    if (members && members.length > MAX_TEAM_MEMBERS) {
       return res.status(400).json({
         success: false,
-        message: 'A team must have exactly 2 members'
+        message: `A team can have maximum ${MAX_TEAM_MEMBERS} members`
       });
     }
 
@@ -48,7 +49,7 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
       createdBy: req.user._id || req.user.id
     });
 
-    if (members && members.length === 2) {
+    if (members && members.length > 0) {
       await User.updateMany(
         { _id: { $in: members } },
         { team: team._id }

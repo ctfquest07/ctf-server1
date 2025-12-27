@@ -59,24 +59,22 @@ exports.protect = async (req, res, next) => {
     const cacheKey = `user:${decoded.id}`;
 
     let user;
-    if (!newTokenGenerated) {
-      try {
-        const cachedStr = await redisClient.get(cacheKey);
-        if (cachedStr) {
-          const cachedData = JSON.parse(cachedStr);
-          // Restore Date objects for password check
-          if (cachedData.passwordChangedAt) {
-            cachedData.passwordChangedAt = new Date(cachedData.passwordChangedAt);
-          }
-          // Ensure _id is always a string for consistency
-          if (cachedData._id && typeof cachedData._id === 'object') {
-            cachedData._id = cachedData._id.toString();
-          }
-          user = cachedData;
+    try {
+      const cachedStr = await redisClient.get(cacheKey);
+      if (cachedStr) {
+        const cachedData = JSON.parse(cachedStr);
+        // Restore Date objects for password check
+        if (cachedData.passwordChangedAt) {
+          cachedData.passwordChangedAt = new Date(cachedData.passwordChangedAt);
         }
-      } catch (e) {
-        console.warn('Redis cache error:', e);
+        // Ensure _id is always a string for consistency
+        if (cachedData._id && typeof cachedData._id === 'object') {
+          cachedData._id = cachedData._id.toString();
+        }
+        user = cachedData;
       }
+    } catch (e) {
+      console.warn('Redis cache error:', e);
     }
 
     if (!user) {

@@ -7,6 +7,7 @@ import './AdminCreateTeam.css';
 function AdminCreateTeam() {
   const { isAuthenticated, user, token } = useContext(AuthContext);
   const navigate = useNavigate();
+  const MAX_TEAM_MEMBERS = 2; // Can be fetched from API config if needed
 
   const [formData, setFormData] = useState({
     name: '',
@@ -78,11 +79,26 @@ function AdminCreateTeam() {
     setError('');
   };
 
-  const handleMemberChange = (e) => {
-    const selected = Array.from(e.target.selectedOptions, option => option.value);
-    setFormData({
-      ...formData,
-      members: selected
+  const handleMemberChange = (userId) => {
+    setFormData(prev => {
+      const isSelected = prev.members.includes(userId);
+      if (isSelected) {
+        // Remove member
+        return {
+          ...prev,
+          members: prev.members.filter(id => id !== userId)
+        };
+      } else {
+        // Add member only if under limit
+        if (prev.members.length >= MAX_TEAM_MEMBERS) {
+          setError(`Maximum ${MAX_TEAM_MEMBERS} members allowed per team`);
+          return prev;
+        }
+        return {
+          ...prev,
+          members: [...prev.members, userId]
+        };
+      }
     });
     setError('');
   };
@@ -98,8 +114,8 @@ function AdminCreateTeam() {
       return false;
     }
 
-    if (formData.members.length > 2) {
-      setError('Teams can have maximum 2 members');
+    if (formData.members.length > MAX_TEAM_MEMBERS) {
+      setError(`Teams can have maximum ${MAX_TEAM_MEMBERS} members`);
       return false;
     }
 
@@ -165,7 +181,7 @@ function AdminCreateTeam() {
       <div className="create-team-container">
         <div className="create-team-header">
           <h1>Create New <span className="highlight">Team</span></h1>
-          <p>Add a new team with 1-2 members</p>
+          <p>Add a new team with 1-{MAX_TEAM_MEMBERS} members</p>
         </div>
 
         {error && <div className="error-message">{error}</div>}
@@ -199,7 +215,7 @@ function AdminCreateTeam() {
 
           <div className="form-group">
             <label htmlFor="members">
-              Select Members * (1-2 members)
+              Select Members * ({formData.members.length}/{MAX_TEAM_MEMBERS} selected)
             </label>
             <input
               type="text"
@@ -207,24 +223,37 @@ function AdminCreateTeam() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="search-input"
-              style={{ marginBottom: '10px', padding: '8px', width: '100%' }}
             />
-            <select
-              id="members"
-              multiple
-              value={formData.members}
-              onChange={handleMemberChange}
-              required
-              size={Math.min(filteredUsers.length || 6, 6)}
-            >
-              {filteredUsers.map(u => (
-                <option key={u._id} value={u._id}>
-                  {u.username} ({u.email})
-                </option>
-              ))}
-            </select>
+            <div className="checkbox-list">
+              {filteredUsers.length === 0 ? (
+                <p className="no-users">No available users found</p>
+              ) : (
+                filteredUsers.map(u => {
+                  const isSelected = formData.members.includes(u._id);
+                  const isDisabled = !isSelected && formData.members.length >= MAX_TEAM_MEMBERS;
+                  
+                  return (
+                    <label
+                      key={u._id}
+                      className={`checkbox-item ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleMemberChange(u._id)}
+                        disabled={isDisabled}
+                      />
+                      <div className="user-info">
+                        <span className="username">{u.username}</span>
+                        <span className="email">{u.email}</span>
+                      </div>
+                    </label>
+                  );
+                })
+              )}
+            </div>
             <span className="form-hint">
-              Hold Ctrl/Cmd to select/deselect multiple users. {filteredUsers.length} users available.
+              {filteredUsers.length} users available • Maximum {MAX_TEAM_MEMBERS} members per team
             </span>
           </div>
 
