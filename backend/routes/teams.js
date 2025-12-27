@@ -143,9 +143,16 @@ router.get('/:id', protect, async (req, res) => {
       });
     }
 
+    // Calculate team points from members
+    const calculatedPoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);
+    
+    // Update team object with calculated points
+    const teamData = team.toObject();
+    teamData.points = calculatedPoints;
+
     res.json({
       success: true,
-      data: team
+      data: teamData
     });
   } catch (error) {
     res.status(500).json({
