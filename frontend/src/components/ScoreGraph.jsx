@@ -54,9 +54,13 @@ function ScoreGraph({ data, type }) {
       return;
     }
 
+    // Items are already sorted by backend (points DESC, tieBreakTime ASC)
+    // Take top 10 users/teams in the order received
+    const topItems = items.slice(0, 10);
+
     // Get all unique timestamps and sort them
     const allTimestamps = new Set();
-    items.forEach(item => {
+    topItems.forEach(item => {
       item.data.forEach(point => allTimestamps.add(point.time));
     });
     
@@ -72,8 +76,8 @@ function ScoreGraph({ data, type }) {
       });
     });
 
-    // Create datasets for each team/user
-    const datasets = items.slice(0, 10).map((item, index) => {
+    // Create datasets for each team/user (maintaining backend sort order)
+    const datasets = topItems.map((item, index) => {
       // Build cumulative scores at each timestamp
       const scores = sortedTimestamps.map(timestamp => {
         // Find the last score update before or at this timestamp
