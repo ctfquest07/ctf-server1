@@ -70,11 +70,11 @@ module.exports = {
     maxAge: parseDuration(process.env.SESSION_MAX_AGE || '24h', 86400000) // 24 hours
   },
 
-  // Security Configuration
+  // Security Configuration - Relaxed for CTF UX
   security: {
-    maxLoginAttempts: parseInt(process.env.MAX_LOGIN_ATTEMPTS, 100),
+    maxLoginAttempts: parseInt(process.env.MAX_LOGIN_ATTEMPTS, 100), // Very high - won't block users
     loginTimeoutMinutes: parseInt(process.env.LOGIN_TIMEOUT, 1),
-    bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS, 12),
+    bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS, 10), // Reduced for faster response
     hstsMaxAge: parseInt(process.env.HSTS_MAX_AGE_SECONDS, 31536000) // 1 year
   },
 
@@ -82,18 +82,18 @@ module.exports = {
   rateLimit: {
     login: {
       windowMs: parseDuration(process.env.LOGIN_RATE_WINDOW || '15m', 900000), // 15 minutes
-      max: parseInt(process.env.LOGIN_RATE_MAX, 5) // 5 attempts per window
+      max: parseInt(process.env.LOGIN_RATE_MAX, 100) // 100 attempts per window - very generous
     },
     flagSubmit: {
-      maxAttempts: parseInt(process.env.FLAG_SUBMIT_MAX_ATTEMPTS, 100),
-      windowSeconds: parseInt(process.env.FLAG_SUBMIT_WINDOW, 30),
-      cooldownSeconds: parseInt(process.env.FLAG_SUBMIT_COOLDOWN, 2),
+      maxAttempts: parseInt(process.env.FLAG_SUBMIT_MAX_ATTEMPTS, 200),
+      windowSeconds: parseInt(process.env.FLAG_SUBMIT_WINDOW, 60),
+      cooldownSeconds: parseInt(process.env.FLAG_SUBMIT_COOLDOWN, 1), // Reduced to 1 second
       windowMs: parseDuration(process.env.FLAG_SUBMIT_RATE_WINDOW || '1m', 60000), // 1 minute
-      max: parseInt(process.env.FLAG_SUBMIT_RATE_MAX, 10) // 10 submissions per minute
+      max: parseInt(process.env.FLAG_SUBMIT_RATE_MAX, 50) // 50 submissions per minute
     },
     general: {
       windowMs: parseDuration(process.env.GENERAL_RATE_WINDOW || '15m', 900000), // 15 minutes
-      max: parseInt(process.env.GENERAL_RATE_MAX, 100) // 100 requests per window
+      max: parseInt(process.env.GENERAL_RATE_MAX, 500) // 500 requests per window - allows frequent scoreboard refresh
     },
     securityAudit: {
       windowMs: parseDuration(process.env.SECURITY_AUDIT_WINDOW || '15m', 900000) // 15 minutes

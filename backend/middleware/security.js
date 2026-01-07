@@ -2,48 +2,45 @@ const rateLimit = require('express-rate-limit');
 const config = require('../config');
 const validator = require('validator');
 
-// Rate limiting configurations
+// Rate limiting configurations - Very generous for CTF UX
 const loginLimiter = rateLimit({
   windowMs: config.rateLimit.login.windowMs,
-  max: config.rateLimit.login.max,
-  message: { success: false, message: 'Too many login attempts, try again later' },
+  max: 100, // Very high limit - users won't hit this during normal CTF
+  message: { success: false, message: 'Too many login attempts, please wait a moment' },
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: true, // Only count failed attempts
 });
 
 const challengeSubmitLimiter = rateLimit({
   windowMs: config.rateLimit.flagSubmit.windowMs,
-  max: config.rateLimit.flagSubmit.max,
-  message: { success: false, message: 'Too many flag submissions, slow down' },
+  max: 50, // Allow rapid flag attempts - this is CTF!
+  message: { success: false, message: 'Please wait a moment before trying again' },
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: false, // Count all attempts to prevent brute force
 });
 
 const generalLimiter = rateLimit({
   windowMs: config.rateLimit.general.windowMs,
-  max: config.rateLimit.general.max,
-  message: { success: false, message: 'Too many requests, please try again later' },
+  max: 500, // Very high - users refreshing scoreboard frequently
+  message: { success: false, message: 'Please wait a moment' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Input sanitization middleware
+// Input sanitization middleware - MINIMAL for CTF UX
+// CTF flags often contain special characters, so we keep sanitization minimal
 const sanitizeInput = (req, res, next) => {
   const sanitizeValue = (value) => {
     if (typeof value === 'string') {
-      // Basic XSS protection
-      value = value
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#x27;')
-        .replace(/\//g, '&#x2F;');
+      // Only protect against the most critical attacks
+      // Don't escape HTML entities - CTF flags might contain them!
       
-      // SQL injection protection - basic patterns
+      // Only block extremely dangerous SQL patterns
       const sqlPatterns = [
-        /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/gi,
-        /(--|\/\*|\*\/|;|'|"|`)/g,
-        /(\bOR\b|\bAND\b).*?[=<>]/gi
+        /(\bDROP\s+(TABLE|DATABASE)\b)/gi,
+        /(\bTRUNCATE\s+TABLE\b)/gi,
       ];
       
       sqlPatterns.forEach(pattern => {

@@ -2,16 +2,16 @@ const crypto = require('crypto');
 
 // Security configuration constants
 const SECURITY_CONFIG = {
-  // Password policy
+  // Password policy - Relaxed for better UX
   PASSWORD: {
-    MIN_LENGTH: 8,
+    MIN_LENGTH: 6,
     MAX_LENGTH: 128,
-    REQUIRE_UPPERCASE: true,
-    REQUIRE_LOWERCASE: true,
-    REQUIRE_NUMBERS: true,
-    REQUIRE_SPECIAL_CHARS: true,
-    BCRYPT_ROUNDS: 12,
-    HISTORY_COUNT: 5 // Remember last 5 passwords
+    REQUIRE_UPPERCASE: false,
+    REQUIRE_LOWERCASE: false,
+    REQUIRE_NUMBERS: false,
+    REQUIRE_SPECIAL_CHARS: false,
+    BCRYPT_ROUNDS: 10,
+    HISTORY_COUNT: 0 // Don't check password history
   },
 
   // Session security
@@ -32,20 +32,20 @@ const SECURITY_CONFIG = {
     AUDIENCE: 'ctfquest-users'
   },
 
-  // Rate limiting
+  // Rate limiting - Very relaxed for CTF event UX
   RATE_LIMIT: {
     LOGIN: {
       WINDOW_MS: 15 * 60 * 1000, // 15 minutes
-      MAX_ATTEMPTS: 3,
-      BLOCK_DURATION: 30 * 60 * 1000 // 30 minutes
+      MAX_ATTEMPTS: 50, // Very generous limit
+      BLOCK_DURATION: 5 * 60 * 1000 // Only 5 minutes block
     },
     API: {
       WINDOW_MS: 15 * 60 * 1000,
-      MAX_REQUESTS: 100
+      MAX_REQUESTS: 1000 // High limit for smooth experience
     },
     CHALLENGE_SUBMIT: {
       WINDOW_MS: 60 * 1000, // 1 minute
-      MAX_ATTEMPTS: 5
+      MAX_ATTEMPTS: 20 // Allow rapid-fire attempts
     }
   },
 
@@ -149,44 +149,26 @@ const generateCSRFToken = () => {
   return crypto.randomBytes(32).toString('hex');
 };
 
-// Validate password strength
+// Validate password strength - RELAXED for CTF UX
 const validatePasswordStrength = (password) => {
   const config = SECURITY_CONFIG.PASSWORD;
   const errors = [];
 
+  // Only check minimum length - keep it simple!
   if (password.length < config.MIN_LENGTH) {
-    errors.push(`Password must be at least ${config.MIN_LENGTH} characters long`);
+    errors.push(`Password must be at least ${config.MIN_LENGTH} characters`);
   }
 
   if (password.length > config.MAX_LENGTH) {
     errors.push(`Password must not exceed ${config.MAX_LENGTH} characters`);
   }
 
-  if (config.REQUIRE_UPPERCASE && !/[A-Z]/.test(password)) {
-    errors.push('Password must contain at least one uppercase letter');
-  }
+  // Skip all complexity requirements - they're disabled in config
+  // No uppercase, lowercase, number, or special char requirements
+  // Users can choose simple passwords for this CTF event
 
-  if (config.REQUIRE_LOWERCASE && !/[a-z]/.test(password)) {
-    errors.push('Password must contain at least one lowercase letter');
-  }
-
-  if (config.REQUIRE_NUMBERS && !/\d/.test(password)) {
-    errors.push('Password must contain at least one number');
-  }
-
-  if (config.REQUIRE_SPECIAL_CHARS && !/[@$!%*?&]/.test(password)) {
-    errors.push('Password must contain at least one special character (@$!%*?&)');
-  }
-
-  // Check for common weak passwords
-  const weakPasswords = [
-    'password', '123456', 'qwerty', 'admin', 'letmein',
-    'welcome', 'monkey', '1234567890', 'password123'
-  ];
-
-  if (weakPasswords.includes(password.toLowerCase())) {
-    errors.push('Password is too common and weak');
-  }
+  // Skip weak password check - let users use what they want
+  // This is a 2-day CTF, not a banking app
 
   return {
     isValid: errors.length === 0,

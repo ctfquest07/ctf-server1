@@ -223,17 +223,16 @@ app.use('/api/r-submission', realtimeRoutes);
 app.use((req, res, next) => {
   // Prevent MIME type sniffing
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  // Prevent clickjacking
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN'); // Allow same origin framing
-  // XSS protection
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  // HSTS for HTTPS
+  // Allow framing for better compatibility
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  // XSS protection (but browser defaults are usually good)
+  res.setHeader('X-XSS-Protection', '0'); // Disabled - modern browsers don't need this
+  // HSTS for HTTPS - only in production
   if (process.env.NODE_ENV === 'production') {
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000');
   }
-  // Relaxed CSP for React apps - allows inline styles/scripts needed for dev builds
-  // For production React builds, inline scripts are common in bundled JS
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' https: data:; worker-src 'self' blob:; connect-src 'self' https:;");
+  // Very permissive CSP - prioritize functionality over strict security for 2-day CTF
+  res.setHeader('Content-Security-Policy', "default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * data: blob:; font-src *; connect-src *; media-src *; object-src *; frame-src *;");
   next();
 });
 

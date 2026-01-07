@@ -127,14 +127,14 @@ const UserSchema = new mongoose.Schema({
   }
 });
 
-// Encrypt password using bcrypt with enhanced security
+// Encrypt password using bcrypt with relaxed security for CTF UX
 UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
     return next();
   }
 
-  // Use configurable bcrypt rounds (minimum 12)
-  const rounds = Math.max(parseInt(process.env.BCRYPT_ROUNDS) || 12, 12);
+  // Use configurable bcrypt rounds (minimum 10 for speed)
+  const rounds = Math.max(parseInt(process.env.BCRYPT_ROUNDS) || 10, 10);
   const salt = await bcrypt.genSalt(rounds);
   this.password = await bcrypt.hash(this.password, salt);
 
@@ -154,7 +154,7 @@ UserSchema.methods.isLocked = function () {
   return !!(this.lockUntil && this.lockUntil > Date.now());
 };
 
-// Increment login attempts
+// Increment login attempts - Very relaxed for CTF
 UserSchema.methods.incrementLoginAttempts = async function () {
   // If lock has expired, reset attempts
   if (this.lockUntil && this.lockUntil < Date.now()) {
@@ -169,10 +169,11 @@ UserSchema.methods.incrementLoginAttempts = async function () {
   const attempts = this.loginAttempts + 1;
   const updates = { $set: { loginAttempts: attempts } };
 
-  // Lock the account if we've reached max attempts
-  if (attempts >= parseInt(process.env.MAX_LOGIN_ATTEMPTS || 5, 10)) {
-    // Parse the LOGIN_TIMEOUT value (e.g., "15m" -> 15)
-    const loginTimeout = parseInt(process.env.LOGIN_TIMEOUT || 15, 10);
+  // Lock the account only if we've reached VERY high limit (100 attempts)
+  // This is just to prevent extreme brute force, normal users won't hit this
+  if (attempts >= parseInt(process.env.MAX_LOGIN_ATTEMPTS || 100, 10)) {
+    // Very short lock time - just 5 minutes
+    const loginTimeout = parseInt(process.env.LOGIN_TIMEOUT || 5, 10);
     updates.$set.lockUntil = Date.now() + loginTimeout * 60 * 1000;
   }
 
