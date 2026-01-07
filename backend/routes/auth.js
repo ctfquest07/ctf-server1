@@ -632,22 +632,45 @@ router.get('/scoreboard', protect, async (req, res) => {
 
       let teamsWithPoints = await Team.aggregate(pipeline);
 
+      // OPTIMIZED: Fetch ALL submissions in ONE query instead of N queries (one per team)
+      // Critical for performance with 500 concurrent users
+      const allMemberIds = teamsWithPoints.flatMap(team => 
+        team.members ? team.members.map(m => m._id) : []
+      );
+
+      // Single bulk query for all team submissions
+      const allSubmissions = await Submission.find({
+        user: { $in: allMemberIds },
+        isCorrect: true
+      }).select('submittedAt points user').sort({ submittedAt: 1 }).lean();
+
+      // Group submissions by user for fast lookup
+      const submissionsByUser = {};
+      allSubmissions.forEach(sub => {
+        if (!submissionsByUser[sub.user]) {
+          submissionsByUser[sub.user] = [];
+        }
+        submissionsByUser[sub.user].push(sub);
+      });
+
       // Calculate tie-breaking timestamp for each team
       for (const team of teamsWithPoints) {
         if (team.points > 0 && team.members && team.members.length > 0) {
-          const memberIds = team.members.map(m => m._id);
-          
-          // Get all correct submissions for team members, sorted by time
-          const submissions = await Submission.find({
-            user: { $in: memberIds },
-            isCorrect: true
-          }).select('submittedAt points user').sort({ submittedAt: 1 }).lean();
+          // Collect all submissions for this team's members
+          const teamSubmissions = [];
+          team.members.forEach(member => {
+            const userSubs = submissionsByUser[member._id.toString()] || [];
+            teamSubmissions.push(...userSubs);
+          });
+
+          // Sort by time
+          teamSubmissions.sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt));
 
           // Calculate cumulative score and find when they reached current score
           let cumulativeScore = 0;
           let reachedCurrentScoreAt = null;
           
-          for (const sub of submissions) {
+          for (const sub of teamSubmissions) {
             cumulativeScore += sub.points || 0;
             if (cumulativeScore >= team.points) {
               reachedCurrentScoreAt = sub.submittedAt;
@@ -694,15 +717,26 @@ router.get('/scoreboard', protect, async (req, res) => {
         .limit(200) // Get top 200 for tie-breaking calculation
         .lean();
 
+      // OPTIMIZED: Fetch ALL user submissions in ONE query instead of N queries
+      const userIds = users.map(u => u._id);
+      const allUserSubmissions = await Submission.find({
+        user: { $in: userIds },
+        isCorrect: true
+      }).select('submittedAt points user').sort({ submittedAt: 1 }).lean();
+
+      // Group submissions by user for fast lookup
+      const submissionsByUser = {};
+      allUserSubmissions.forEach(sub => {
+        if (!submissionsByUser[sub.user.toString()]) {
+          submissionsByUser[sub.user.toString()] = [];
+        }
+        submissionsByUser[sub.user.toString()].push(sub);
+      });
+
       // Calculate tie-breaking timestamp for each user
-      const Submission = require('../models/Submission');
       for (const user of users) {
         if (user.points > 0) {
-          // Get all correct submissions for this user, sorted by time
-          const submissions = await Submission.find({
-            user: user._id,
-            isCorrect: true
-          }).select('submittedAt points').sort({ submittedAt: 1 }).lean();
+          const submissions = submissionsByUser[user._id.toString()] || [];
 
           // Calculate cumulative score and find when they reached current score
           let cumulativeScore = 0;

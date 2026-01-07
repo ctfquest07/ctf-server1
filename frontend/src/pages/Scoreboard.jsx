@@ -84,9 +84,11 @@ function Scoreboard() {
   useEffect(() => {
     fetchScoreboard();
 
+    // Add random jitter (25-35s) to prevent thundering herd with 500 users
+    const jitter = Math.floor(Math.random() * 10000) + 25000; // 25-35 seconds
     const interval = setInterval(() => {
       fetchScoreboard(true);
-    }, 30000);
+    }, jitter);
 
     return () => clearInterval(interval);
   }, [isAuthenticated, token, navigate]);

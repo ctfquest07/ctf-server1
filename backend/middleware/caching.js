@@ -7,17 +7,27 @@ const CACHE_CONFIG = {
   default: 60000 // 1 minute
 };
 
+const MAX_CACHE_SIZE = 1000; // Prevent memory leaks with 500 concurrent users
+
 class CacheManager {
   constructor() {
     this.cache = new Map();
     this.stats = {
       hits: 0,
       misses: 0,
-      sets: 0
+      sets: 0,
+      evictions: 0
     };
   }
 
   set(key, value, ttl = CACHE_CONFIG.default) {
+    // Implement LRU: If cache full, delete oldest entry
+    if (this.cache.size >= MAX_CACHE_SIZE) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+      this.stats.evictions++;
+    }
+
     this.cache.set(key, {
       value,
       expiresAt: Date.now() + ttl

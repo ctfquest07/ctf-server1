@@ -59,20 +59,23 @@ class ConcurrencyManager {
 const manager = new ConcurrencyManager(500);
 
 const concurrencyMiddleware = async (req, res, next) => {
+  let released = false;
+  const release = () => {
+    if (!released) {
+      released = true;
+      manager.releaseRequest();
+    }
+  };
+
   try {
     await manager.processRequest();
     
-    res.on('finish', () => {
-      manager.releaseRequest();
-    });
-
-    res.on('close', () => {
-      manager.releaseRequest();
-    });
+    res.on('finish', release);
+    res.on('close', release);
 
     next();
   } catch (err) {
-    manager.releaseRequest();
+    release();
     res.status(503).json({
       success: false,
       message: 'Server at capacity. Please try again.'
