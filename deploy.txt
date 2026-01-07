@@ -162,7 +162,7 @@ PHASE 5: BACKEND DEPLOYMENT
 
 2. Install Backend Dependencies:
    
-   cd ~/ctf-platform/backend
+   cd ~/ctf-server1/backend
    npm ci --only=production
 
 
@@ -187,7 +187,7 @@ PHASE 6: FRONTEND DEPLOYMENT
 
 1. Install Frontend Dependencies:
    
-   cd ~/ctf-platform/frontend
+   cd ~/ctf-server1/frontend
    npm install
 
 
@@ -198,9 +198,9 @@ PHASE 6: FRONTEND DEPLOYMENT
    
    Add the following line (pointing to your public domain/IP):
    
-   VITE_API_URL=http://<YOUR-EC2-PUBLIC-IP>
+   VITE_API_URL=http://<YOUR-EC2-PUBLIC-IP>/api
    
-   Note: If you are setting up SSL later, use https://.../api
+   Note: If you are setting up SSL later, use https://your-domain.com/api
 
 
 3. Build for Production:
