@@ -41,6 +41,7 @@ const TEAM_COLORS = [
 function ScoreGraph({ data, type }) {
   const [chartData, setChartData] = useState(null);
   const [hiddenDatasets, setHiddenDatasets] = useState(new Set());
+  const [sortedTimestamps, setSortedTimestamps] = useState([]);
   const chartRef = useRef(null);
 
   useEffect(() => {
@@ -71,15 +72,25 @@ function ScoreGraph({ data, type }) {
     });
     
     const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b);
+    setSortedTimestamps(sortedTimestamps);
 
-    // Format timestamps for display
+    // Get the earliest timestamp as the start time
+    const startTime = sortedTimestamps[0];
+
+    // Format timestamps as elapsed time from start (CTFd style)
     const labels = sortedTimestamps.map(ts => {
-      const date = new Date(ts);
-      return date.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: false 
-      });
+      const elapsedMs = ts - startTime;
+      const elapsedMinutes = Math.floor(elapsedMs / 60000);
+      const elapsedHours = Math.floor(elapsedMinutes / 60);
+      const remainingMinutes = elapsedMinutes % 60;
+      
+      if (elapsedHours > 0) {
+        return `${elapsedHours}h ${remainingMinutes}m`;
+      } else if (elapsedMinutes > 0) {
+        return `${elapsedMinutes}m`;
+      } else {
+        return '0m';
+      }
     });
 
     // Create datasets for each team/user (maintaining backend sort order)
@@ -198,6 +209,18 @@ function ScoreGraph({ data, type }) {
         displayColors: true,
         callbacks: {
           title: (context) => {
+            // Show absolute time in tooltip for clarity
+            const dataIndex = context[0].dataIndex;
+            if (sortedTimestamps && sortedTimestamps[dataIndex]) {
+              const date = new Date(sortedTimestamps[dataIndex]);
+              return date.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+              });
+            }
             return `Time: ${context[0].label}`;
           },
           label: (context) => {
@@ -220,7 +243,7 @@ function ScoreGraph({ data, type }) {
         display: true,
         title: {
           display: true,
-          text: 'Time',
+          text: 'Elapsed Time',
           color: '#b0b0b0',
           font: {
             size: 13,
