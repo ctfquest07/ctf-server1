@@ -165,7 +165,7 @@ function Challenges() {
         setLoading(true);
       }
       Logger.info('FETCH_CHALLENGES_START');
-      
+
       const config = token ? {
         headers: {
           Authorization: `Bearer ${token}`
@@ -190,7 +190,7 @@ function Challenges() {
       if (showLoadingState) {
         setLoading(false);
       }
-      Logger.info('FETCH_CHALLENGES_SUCCESS', { 
+      Logger.info('FETCH_CHALLENGES_SUCCESS', {
         count: visibleChallenges.length
       });
     } catch (err) {
@@ -204,12 +204,12 @@ function Challenges() {
 
   useEffect(() => {
     fetchChallenges(true);
-    
+
     // Poll for new challenges every 10 seconds (without showing loading state)
     const pollInterval = setInterval(() => {
       fetchChallenges(false);
     }, 10000);
-    
+
     return () => clearInterval(pollInterval);
   }, [user?.role, token, isAuthenticated]);
 
@@ -260,18 +260,13 @@ function Challenges() {
           fontWeight: 'bold',
           boxShadow: '0 0 15px rgba(139, 92, 246, 0.3)'
         }}>
-          ⚠️ CTF Event Has Ended - Flag submissions are no longer accepted
-          {eventState?.endedAt && (
-            <div style={{ fontSize: '14px', marginTop: '5px', opacity: 0.9 }}>
-              Ended: {new Date(eventState.endedAt).toLocaleString()}
-            </div>
-          )}
+          CTF Event Has Ended - Flag submissions are no longer accepted
         </div>
       )}
       <div className="challenges-header">
         <div className="header-content">
           <h1 className="page-title">Challenges</h1>
-          
+
           {!isAuthenticated && (
             <div className="auth-notice">
               <p>🔒 You can view challenges, but you need to <Link to="/login">login</Link> to solve them and earn points!</p>
@@ -291,7 +286,7 @@ function Challenges() {
           </div>
 
           {isAuthenticated && user?.role === 'admin' && (
-            <Link to="/create-challenge" className="create-challenge-button" style={{marginTop: '1rem', display: 'inline-block'}}>
+            <Link to="/create-challenge" className="create-challenge-button" style={{ marginTop: '1rem', display: 'inline-block' }}>
               Create Challenge
             </Link>
           )}
@@ -328,8 +323,8 @@ function Challenges() {
                     {isSolved && <span className="solved-badge">✓</span>}
                   </h3>
                   <div className="challenge-footer">
-                    <span 
-                      className="solved-count clickable" 
+                    <span
+                      className="solved-count clickable"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedChallengeForSolves(challenge);

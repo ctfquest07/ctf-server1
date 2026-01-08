@@ -43,12 +43,12 @@ function Scoreboard() {
       const filteredUsers = (usersRes.data.data || []).filter(user => user.role !== 'admin');
       setUsers(filteredUsers);
       setLastUpdated(new Date());
-      
+
       // Check if event is ended from response
       const eventEndedFromResponse = teamsRes.data.eventEnded || usersRes.data.eventEnded;
       setEventEnded(eventEndedFromResponse || false);
       setEventEndedAt(teamsRes.data.eventEndedAt || usersRes.data.eventEndedAt || null);
-      
+
       setError(null);
       if (!isAutoRefresh) setLoading(false);
 
@@ -140,13 +140,7 @@ function Scoreboard() {
           gap: '10px',
           boxShadow: '0 0 15px rgba(139, 92, 246, 0.3)'
         }}>
-          <span></span>
           <span>CTF Event Has Ended</span>
-          {eventEndedAt && (
-            <span style={{ fontSize: '14px', opacity: 0.9, marginLeft: '10px' }}>
-              (Ended: {new Date(eventEndedAt).toLocaleString()})
-            </span>
-          )}
         </div>
       )}
       <div className="scoreboard-header">
@@ -207,7 +201,7 @@ function Scoreboard() {
                       {item.name}
                     </button>
                   ) : (
-                    <button 
+                    <button
                       className="username-link"
                       onClick={() => navigate(`/user/${item._id}`)}
                     >

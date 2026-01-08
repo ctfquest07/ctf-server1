@@ -43,15 +43,15 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
         </div>
 
         {isEnded && (
-          <div className="modal-error" style={{ 
-            backgroundColor: 'rgba(139, 92, 246, 0.2)', 
+          <div className="modal-error" style={{
+            backgroundColor: 'rgba(139, 92, 246, 0.2)',
             border: '2px solid #8b5cf6',
-            color: '#c4b5fd', 
-            padding: '15px', 
+            color: '#c4b5fd',
+            padding: '15px',
             marginBottom: '15px',
             boxShadow: '0 0 10px rgba(139, 92, 246, 0.3)'
           }}>
-             CTF Event Has Ended - Submissions are no longer accepted
+            CTF Event Has Ended - Submissions are no longer accepted
           </div>
         )}
         {error && <div className="modal-error">{error}</div>}
@@ -158,7 +158,7 @@ function ChallengeDetails() {
     const hint = challenge.hints[hintIndex];
     const userPoints = user.points || 0;
     const hasTeam = user.team && user.team._id;
-    
+
     // If user has a team, fetch the latest team points using the team ID
     let teamPoints = 0;
     if (hasTeam) {
@@ -176,19 +176,19 @@ function ChallengeDetails() {
         teamPoints = user.team.points || 0;
       }
     }
-    
+
     // Use team points if in a team, otherwise use individual points
     const availablePoints = hasTeam ? teamPoints : userPoints;
     const pointsType = hasTeam ? 'team' : 'individual';
-    
+
     // Check if enough points available
     if (availablePoints < hint.cost) {
       alert(`Insufficient points! You need ${hint.cost} points but have ${availablePoints} ${pointsType} points.`);
       return;
     }
-    
+
     const confirmMessage = `Are you sure you want to unlock this hint for ${hint.cost} points?\n\nTeam points: ${teamPoints}\nAfter unlock: ${teamPoints - hint.cost} points`;
-    
+
     if (!window.confirm(confirmMessage)) {
       return;
     }
@@ -203,7 +203,7 @@ function ChallengeDetails() {
 
       // Update unlocked hints
       setUnlockedHints([...unlockedHints, hintIndex]);
-      
+
       // Update user data to reflect new points
       await updateUserData();
 
@@ -250,12 +250,7 @@ function ChallengeDetails() {
           fontWeight: 'bold',
           boxShadow: '0 0 15px rgba(139, 92, 246, 0.3)'
         }}>
-           CTF Event Has Ended - Flag submissions are no longer accepted
-          {eventState?.endedAt && (
-            <div style={{ fontSize: '14px', marginTop: '5px', opacity: 0.9 }}>
-              Ended: {new Date(eventState.endedAt).toLocaleString()}
-            </div>
-          )}
+          CTF Event Has Ended - Flag submissions are no longer accepted
         </div>
       )}
       <div className="challenge-details-header">
@@ -269,76 +264,76 @@ function ChallengeDetails() {
 
       <div className="challenges-main">
         <div className="challenge-details-content">
-        <div className="challenge-meta">
-          <span className={`difficulty-badge ${challenge.difficulty.toLowerCase()}`}>
-            {challenge.difficulty}
-          </span>
-          <span className="points-badge">{challenge.points} pts</span>
-          <span className="category-badge">{challenge.category}</span>
-          <span className="solved-count">{challenge.solvedBy?.length || 0} solves</span>
-        </div>
-
-        <div className="description">
-          <h3>Description</h3>
-          <p>{challenge.description}</p>
-        </div>
-
-        {challenge.hints && challenge.hints.length > 0 && (
-          <div className="hints">
-            <h3>Hints</h3>
-            {challenge.hints.map((hint, index) => {
-              const isUnlocked = unlockedHints.includes(index);
-              const isFree = hint.cost === 0;
-              const showContent = isFree || isUnlocked;
-
-              return (
-                <div key={index} className={`hint-item ${showContent ? 'unlocked' : 'locked'}`}>
-                  {showContent ? (
-                    <p>{hint.content}</p>
-                  ) : (
-                    <div className="locked-hint">
-                      <button
-                        className="unlock-hint-button"
-                        onClick={() => unlockHint(index)}
-                        disabled={!isAuthenticated || unlockingHint === index}
-                      >
-                        {unlockingHint === index ? 'Unlocking...' : `Unlock Hint for ${hint.cost} points`}
-                      </button>
-                      {!isAuthenticated && (
-                        <p className="login-hint">Login to unlock this hint</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          <div className="challenge-meta">
+            <span className={`difficulty-badge ${challenge.difficulty.toLowerCase()}`}>
+              {challenge.difficulty}
+            </span>
+            <span className="points-badge">{challenge.points} pts</span>
+            <span className="category-badge">{challenge.category}</span>
+            <span className="solved-count">{challenge.solvedBy?.length || 0} solves</span>
           </div>
-        )}
 
-        <div className="challenge-actions">
-          {isEnded ? (
-            <div style={{
-              padding: '15px',
-              backgroundColor: 'rgba(139, 92, 246, 0.15)',
-              border: '2px solid #8b5cf6',
-              borderRadius: '5px',
-              textAlign: 'center',
-              color: '#c4b5fd',
-              fontWeight: 'bold',
-              boxShadow: '0 0 10px rgba(139, 92, 246, 0.2)'
-            }}>
-              CTF Event Has Ended - Flag submissions are no longer accepted
+          <div className="description">
+            <h3>Description</h3>
+            <p>{challenge.description}</p>
+          </div>
+
+          {challenge.hints && challenge.hints.length > 0 && (
+            <div className="hints">
+              <h3>Hints</h3>
+              {challenge.hints.map((hint, index) => {
+                const isUnlocked = unlockedHints.includes(index);
+                const isFree = hint.cost === 0;
+                const showContent = isFree || isUnlocked;
+
+                return (
+                  <div key={index} className={`hint-item ${showContent ? 'unlocked' : 'locked'}`}>
+                    {showContent ? (
+                      <p>{hint.content}</p>
+                    ) : (
+                      <div className="locked-hint">
+                        <button
+                          className="unlock-hint-button"
+                          onClick={() => unlockHint(index)}
+                          disabled={!isAuthenticated || unlockingHint === index}
+                        >
+                          {unlockingHint === index ? 'Unlocking...' : `Unlock Hint for ${hint.cost} points`}
+                        </button>
+                        {!isAuthenticated && (
+                          <p className="login-hint">Login to unlock this hint</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          ) : (
-            <button
-              className={`solve-challenge-button ${!isAuthenticated ? 'login-required' : ''}`}
-              onClick={openModal}
-              disabled={isSolved}
-            >
-              {isSolved ? 'Solved ✓' : isAuthenticated ? 'Submit Flag' : 'Login to Solve'}
-            </button>
           )}
-        </div>
+
+          <div className="challenge-actions">
+            {isEnded ? (
+              <div style={{
+                padding: '15px',
+                backgroundColor: 'rgba(139, 92, 246, 0.15)',
+                border: '2px solid #8b5cf6',
+                borderRadius: '5px',
+                textAlign: 'center',
+                color: '#c4b5fd',
+                fontWeight: 'bold',
+                boxShadow: '0 0 10px rgba(139, 92, 246, 0.2)'
+              }}>
+                CTF Event Has Ended - Flag submissions are no longer accepted
+              </div>
+            ) : (
+              <button
+                className={`solve-challenge-button ${!isAuthenticated ? 'login-required' : ''}`}
+                onClick={openModal}
+                disabled={isSolved}
+              >
+                {isSolved ? 'Solved ✓' : isAuthenticated ? 'Submit Flag' : 'Login to Solve'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
