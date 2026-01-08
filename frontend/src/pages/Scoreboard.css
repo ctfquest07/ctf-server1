@@ -158,20 +158,12 @@
   color: #000;
 }
 
-.rank-1 {
-  background-color: #FFD700;
-  /* Gold */
-}
-
-.rank-2 {
-  background-color: #C0C0C0;
-  /* Silver */
-}
-
+.rank-1,
+.rank-2,
 .rank-3 {
-  background-color: #CD7F32;
-  /* Bronze */
-  color: #fff;
+  background-color: #00ffaa;
+  color: #000000;
+  box-shadow: 0 0 10px rgba(0, 255, 170, 0.4);
 }
 
 /* Remove side borders and glows for top ranks */
