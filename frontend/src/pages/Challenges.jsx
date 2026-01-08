@@ -145,11 +145,7 @@ function Challenges() {
   const [showSolvesModal, setShowSolvesModal] = useState(false)
   const [selectedChallengeForSolves, setSelectedChallengeForSolves] = useState(null)
 
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalChallenges, setTotalChallenges] = useState(0)
   const { user, isAuthenticated, token, updateUserData } = useContext(AuthContext)
-  const itemsPerPage = 12
 
   const categories = [
     { id: 'all', name: 'All Challenges' },
@@ -161,10 +157,10 @@ function Challenges() {
     { id: 'misc', name: 'Miscellaneous' }
   ]
 
-  const fetchChallenges = async (page = 1) => {
+  const fetchChallenges = async () => {
     try {
       setLoading(true);
-      Logger.info('FETCH_CHALLENGES_START', { page, itemsPerPage });
+      Logger.info('FETCH_CHALLENGES_START');
       
       const config = token ? {
         headers: {
@@ -172,12 +168,10 @@ function Challenges() {
         }
       } : {};
 
-      const res = await axios.get(`/api/challenges?page=${page}&limit=${itemsPerPage}`, config);
+      const res = await axios.get('/api/challenges?page=1&limit=1000', config);
 
       if (!res.data.data || !Array.isArray(res.data.data)) {
         setChallenges([]);
-        setTotalPages(1);
-        setTotalChallenges(0);
         setLoading(false);
         return;
       }
@@ -187,14 +181,9 @@ function Challenges() {
         : res.data.data.filter(challenge => challenge.isVisible === true);
 
       setChallenges(visibleChallenges);
-      setTotalPages(res.data.pages || 1);
-      setTotalChallenges(res.data.total || 0);
-      setCurrentPage(page);
       setLoading(false);
       Logger.info('FETCH_CHALLENGES_SUCCESS', { 
-        count: visibleChallenges.length, 
-        totalPages: res.data.pages,
-        currentPage: page 
+        count: visibleChallenges.length
       });
     } catch (err) {
       Logger.error('FETCH_CHALLENGES_ERROR', { error: err.message });
@@ -204,16 +193,8 @@ function Challenges() {
   };
 
   useEffect(() => {
-    fetchChallenges(1);
-    setCurrentPage(1);
+    fetchChallenges();
   }, [user?.role, token, isAuthenticated]);
-
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      fetchChallenges(page);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
 
   const openModal = (challenge) => {
     // Always redirect to challenge details page
@@ -335,55 +316,6 @@ function Challenges() {
             })
           )}
         </div>
-        
-        {totalPages > 1 && (
-          <div className="pagination">
-            <button 
-              onClick={() => handlePageChange(currentPage - 1)} 
-              disabled={currentPage === 1}
-              className="pagination-btn"
-            >
-              Previous
-            </button>
-            
-            <div className="pagination-numbers">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum;
-                if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-                
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => handlePageChange(pageNum)}
-                    className={`pagination-number ${currentPage === pageNum ? 'active' : ''}`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-            </div>
-            
-            <button 
-              onClick={() => handlePageChange(currentPage + 1)} 
-              disabled={currentPage === totalPages}
-              className="pagination-btn"
-            >
-              Next
-            </button>
-            
-            <span className="pagination-info">
-              Page {currentPage} of {totalPages} ({totalChallenges} challenges)
-            </span>
-          </div>
-        )}
       </div>
 
       {showSolvesModal && selectedChallengeForSolves && (
