@@ -370,6 +370,7 @@ mongoose.connect(MONGODB_URI, mongoOptions)
       const EventState = require('./models/EventState');
       const { refreshEventStateCache } = require('./middleware/eventState');
       
+      // Use getEventState which handles upsert atomically
       const eventState = await EventState.getEventState();
       const stateObj = {
         status: eventState.status,
@@ -382,7 +383,31 @@ mongoose.connect(MONGODB_URI, mongoOptions)
       await refreshEventStateCache(stateObj);
       console.log(`[EventState] Initialized: status=${eventState.status}`);
     } catch (err) {
-      console.error('[EventState] Error initializing event state:', err);
+      // Handle duplicate key error gracefully (can happen with multiple PM2 instances)
+      if (err.code === 11000) {
+        // Document already exists, just fetch it
+        try {
+          const EventState = require('./models/EventState');
+          const { refreshEventStateCache } = require('./middleware/eventState');
+          const FIXED_ID = '000000000000000000000001';
+          const eventState = await EventState.findById(FIXED_ID);
+          if (eventState) {
+            const stateObj = {
+              status: eventState.status,
+              startedAt: eventState.startedAt,
+              endedAt: eventState.endedAt,
+              startedBy: eventState.startedBy,
+              endedBy: eventState.endedBy
+            };
+            await refreshEventStateCache(stateObj);
+            console.log(`[EventState] Initialized (existing): status=${eventState.status}`);
+          }
+        } catch (retryErr) {
+          console.error('[EventState] Error fetching existing event state:', retryErr);
+        }
+      } else {
+        console.error('[EventState] Error initializing event state:', err);
+      }
       // Don't block server startup if event state initialization fails
     }
 

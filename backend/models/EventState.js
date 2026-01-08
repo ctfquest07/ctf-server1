@@ -41,15 +41,23 @@ const EventStateSchema = new mongoose.Schema({
 // Use a fixed _id to guarantee singleton pattern
 EventStateSchema.statics.getEventState = async function() {
   const FIXED_ID = '000000000000000000000001'; // Fixed ObjectId for singleton
-  let eventState = await this.findById(FIXED_ID);
   
-  if (!eventState) {
-    // Create default event state if it doesn't exist
-    eventState = await this.create({
-      _id: FIXED_ID,
-      status: 'not_started'
-    });
-  }
+  // Use findByIdAndUpdate with upsert for atomic operation (prevents race conditions)
+  const eventState = await this.findByIdAndUpdate(
+    FIXED_ID,
+    {
+      $setOnInsert: {
+        status: 'not_started',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    },
+    {
+      new: true,
+      upsert: true,
+      setDefaultsOnInsert: true
+    }
+  );
   
   return eventState;
 };
