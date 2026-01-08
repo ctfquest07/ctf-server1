@@ -152,7 +152,7 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, [token]);
 
-  // Periodic check for user block status (every 30 seconds)
+  // Periodic check for user block status (every 60 seconds)
   useEffect(() => {
     if (!isAuthenticated || !token || !user) return;
 
@@ -171,7 +171,8 @@ export const AuthProvider = ({ children }) => {
           window.location.href = '/blocked';
         }
       } catch (err) {
-        // If we get a 403 with isBlocked, logout
+        // Only logout for block-related errors (403 with isBlocked)
+        // Ignore 401 errors as they're handled by axios interceptor
         if (err.response?.status === 403 && err.response?.data?.isBlocked) {
           console.warn('User has been blocked - logging out');
           localStorage.removeItem('token');
@@ -181,8 +182,9 @@ export const AuthProvider = ({ children }) => {
           setError('Your account has been blocked by an administrator.');
           window.location.href = '/blocked';
         }
+        // For other errors (like 401), silently continue - axios interceptor will handle
       }
-    }, 30000); // Check every 30 seconds
+    }, 60000); // Check every 60 seconds
 
     return () => clearInterval(blockCheckInterval);
   }, [isAuthenticated, token, user]);
