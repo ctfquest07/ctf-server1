@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import AuthContext from '../context/AuthContext';
 import './Notice.css';
 
 function Notice() {
@@ -7,6 +8,7 @@ function Notice() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedNotice, setSelectedNotice] = useState(null);
+  const { isAuthenticated } = useContext(AuthContext);
 
   useEffect(() => {
     fetchNotices();
@@ -24,6 +26,21 @@ function Notice() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const markAsRead = async (noticeId) => {
+    if (!isAuthenticated) return;
+    
+    try {
+      await axios.post(`/api/notices/${noticeId}/mark-read`);
+    } catch (err) {
+      console.error('Error marking notice as read:', err);
+    }
+  };
+
+  const handleNoticeClick = (notice) => {
+    setSelectedNotice(notice);
+    markAsRead(notice._id);
   };
 
   if (loading) {
@@ -87,7 +104,7 @@ function Notice() {
                 <div 
                   key={notice._id} 
                   className="notice-card"
-                  onClick={() => setSelectedNotice(notice)}
+                  onClick={() => handleNoticeClick(notice)}
                 >
                   <div className="notice-title">{notice.title}</div>
                   <div className="notice-meta">

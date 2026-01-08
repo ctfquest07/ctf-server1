@@ -21,6 +21,10 @@ const noticeSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  readBy: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   createdAt: {
     type: Date,
     default: Date.now
@@ -34,5 +38,6 @@ const noticeSchema = new mongoose.Schema({
 noticeSchema.index({ createdAt: -1 });
 noticeSchema.index({ isActive: 1 });
 noticeSchema.index({ createdBy: 1 });
+noticeSchema.index({ readBy: 1 });
 
 module.exports = mongoose.model('Notice', noticeSchema);

@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useContext, useState, useEffect, useRef } from 'react'
 import AuthContext from '../context/AuthContext'
+import axios from 'axios'
 
 import './Navbar.css'
 
@@ -9,9 +10,12 @@ function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [unreadNoticeCount, setUnreadNoticeCount] = useState(0);
   const location = useLocation();
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
+  const audioRef = useRef(null);
+  const previousCountRef = useRef(0);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,6 +25,44 @@ function Navbar() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Fetch unread notice count
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUnreadCount();
+      // Poll every 30 seconds for new notices
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await axios.get('/api/notices/unread-count');
+      const newCount = response.data.count;
+      
+      // Play notification sound if count increased
+      if (newCount > previousCountRef.current && previousCountRef.current > 0) {
+        playNotificationSound();
+      }
+      
+      previousCountRef.current = newCount;
+      setUnreadNoticeCount(newCount);
+    } catch (err) {
+      console.error('Error fetching unread notice count:', err);
+    }
+  };
+
+  const playNotificationSound = () => {
+    try {
+      if (!audioRef.current) {
+        audioRef.current = new Audio('/notification.wav');
+      }
+      audioRef.current.play().catch(err => console.error('Error playing sound:', err));
+    } catch (err) {
+      console.error('Error with notification sound:', err);
+    }
+  };
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -111,7 +153,14 @@ function Navbar() {
                 </div>
               </li>
             )}
-            <li><Link to="/notices" className={`nav-link ${isActiveLink('/notices') ? 'active' : ''}`}>Notices</Link></li>
+            <li>
+              <Link to="/notices" className={`nav-link ${isActiveLink('/notices') ? 'active' : ''}`}>
+                Notices
+                {isAuthenticated && unreadNoticeCount > 0 && (
+                  <span className="notification-badge">{unreadNoticeCount}</span>
+                )}
+              </Link>
+            </li>
             <li><Link to="/documentation" className={`nav-link ${isActiveLink('/documentation') ? 'active' : ''}`}>Docs</Link></li>
             <li><Link to="/contact" className={`nav-link ${isActiveLink('/contact') ? 'active' : ''}`}>Contact</Link></li>
           </ul>

@@ -227,9 +227,10 @@ PHASE 7: NGINX REVERSE PROXY & STATIC SERVING
    
    Paste your updated nginx.conf content here.
 
-   Ensure the root directive points to correctly:
-   
-   root /home/ubuntu/ctf-platform/frontend/dist;
+   IMPORTANT: Ensure these are correct:
+   - server_name matches your domain (e.g., ctfquest.ddns.net)
+   - root path matches your deployment folder
+   - Include the .well-known location block for SSL verification
 
 
 3. Enable Site:
@@ -249,8 +250,37 @@ PHASE 7: NGINX REVERSE PROXY & STATIC SERVING
 PHASE 8: SSL (HTTPS)
 ========================================================================
 
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d your-domain.com
+1. Install Certbot:
+   
+   sudo apt install -y certbot python3-certbot-nginx
+
+
+2. Ensure .well-known directory exists:
+   
+   sudo mkdir -p /var/www/html/.well-known/acme-challenge
+   sudo chown -R www-data:www-data /var/www/html/.well-known
+
+
+3. Run Certbot (replace with your actual domain):
+   
+   sudo certbot --nginx -d ctfquest.ddns.net
+   
+   Follow the prompts and choose option 2 to redirect HTTP to HTTPS
+
+
+4. Verify SSL:
+   
+   sudo systemctl status certbot.timer
+   
+   Certbot will auto-renew certificates before expiry
+
+
+5. Update Frontend .env for HTTPS:
+   After SSL is enabled, rebuild frontend with:
+   
+   VITE_API_URL=https://ctfquest.ddns.net/api
+   
+   Then run: npm run build
 
 
 ========================================================================

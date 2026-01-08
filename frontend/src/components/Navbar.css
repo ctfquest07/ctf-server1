@@ -235,6 +235,38 @@
   width: 50%;
 }
 
+/* Notification Badge */
+.notification-badge {
+  position: absolute;
+  top: -2px;
+  right: -8px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%);
+  color: white;
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+  animation: pulse 2s ease-in-out infinite;
+  border: 2px solid var(--dark-bg);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.6);
+  }
+}
+
 /* Admin Dropdown in Navbar */
 .admin-dropdown {
   position: relative;
