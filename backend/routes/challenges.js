@@ -107,9 +107,24 @@ router.get('/', sanitizeInput, async (req, res) => {
     }
 
     const query = {};
-    // Show all challenges to admins, only visible challenges to others (including non-authenticated users)
-    if (!user || user.role !== 'admin') {
+    // Show all challenges to admins, only visible challenges to others
+    const isAdmin = user && user.role === 'admin';
+
+    if (!isAdmin) {
       query.isVisible = true;
+
+      // Try cache for public users
+      const cacheKey = 'challenges:list:public';
+      try {
+        const cachedData = await redisClient.get(cacheKey);
+        if (cachedData) {
+          // Add cache hit header for debugging
+          res.setHeader('X-Cache', 'HIT');
+          return res.json(JSON.parse(cachedData));
+        }
+      } catch (err) {
+        console.error('Redis cache error:', err);
+      }
     }
 
     const total = await Challenge.countDocuments(query);
@@ -119,18 +134,31 @@ router.get('/', sanitizeInput, async (req, res) => {
       .skip(skip)
       .sort({ createdAt: -1 });
 
-    res.json({
+    const response = {
       success: true,
       count: challenges.length,
       total,
       page,
       pages: Math.ceil(total / limit),
       data: challenges
-    });
+    };
+
+    // Cache public response (5 minutes)
+    if (!isAdmin) {
+      try {
+        await redisClient.setex('challenges:list:public', 300, JSON.stringify(response));
+        res.setHeader('X-Cache', 'MISS');
+      } catch (err) {
+        console.error('Redis set error:', err);
+      }
+    }
+
+    res.json(response);
   } catch (error) {
+    // Only return error message in development or generic in production
     res.status(500).json({
       success: false,
-      message: error.message
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Error fetching challenges'
     });
   }
 });
@@ -393,6 +421,13 @@ router.get('/:id', async (req, res) => {
 router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => {
   try {
     const challenge = await Challenge.create(req.body);
+
+    // Invalidate public challenges cache
+    try {
+      await redisClient.del('challenges:list:public');
+    } catch (err) {
+      console.error('Cache invalidation error:', err);
+    }
 
     res.status(201).json({
       success: true,
@@ -762,6 +797,13 @@ router.delete('/:id', protect, authorize('admin', 'superadmin'), async (req, res
 
     await challenge.deleteOne();
 
+    // Invalidate public challenges cache
+    try {
+      await redisClient.del('challenges:list:public');
+    } catch (err) {
+      console.error('Cache invalidation error:', err);
+    }
+
     res.json({
       success: true,
       message: 'Challenge deleted successfully'
@@ -815,6 +857,13 @@ router.put('/:id', protect, authorize('admin', 'superadmin'), async (req, res) =
       challengeId: updatedChallenge._id,
       isVisible: updatedChallenge.isVisible
     });
+
+    // Invalidate public challenges cache
+    try {
+      await redisClient.del('challenges:list:public');
+    } catch (err) {
+      console.error('Cache invalidation error:', err);
+    }
 
     res.json({
       success: true,

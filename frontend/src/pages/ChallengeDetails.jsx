@@ -321,10 +321,10 @@ function ChallengeDetails() {
         </div>
       )}
       <div className="challenge-details-header">
+        <button onClick={() => navigate('/challenges')} className="back-button">
+          ← Back to Challenges
+        </button>
         <div className="header-content">
-          <button onClick={() => navigate('/challenges')} className="back-button">
-            ← Back to Challenges
-          </button>
           <h1>{challenge.title}</h1>
         </div>
       </div>

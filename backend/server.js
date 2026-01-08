@@ -331,9 +331,9 @@ const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb
 
 // Enhanced MongoDB connection options for 500+ concurrent users support
 const mongoOptions = {
-  // Connection pool settings for high concurrency (500+ users)
-  maxPoolSize: parseInt(process.env.MONGO_MAX_POOL_SIZE) || 500, // Increased for production load
-  minPoolSize: parseInt(process.env.MONGO_MIN_POOL_SIZE) || 50,  // Increased for production load
+  // Connection pool settings - Optimized for PM2 Cluster (Total ~800 connections with 4 instances)
+  maxPoolSize: parseInt(process.env.MONGO_MAX_POOL_SIZE) || 200,
+  minPoolSize: parseInt(process.env.MONGO_MIN_POOL_SIZE) || 20,
   maxIdleTimeMS: parseInt(process.env.MONGO_MAX_IDLE_TIME) || 60000, // Close connections after 60 seconds of inactivity
   serverSelectionTimeoutMS: parseInt(process.env.MONGO_SERVER_SELECTION_TIMEOUT) || 10000, // How long to try selecting a server
   socketTimeoutMS: parseInt(process.env.MONGO_SOCKET_TIMEOUT) || 60000, // How long a send or receive on a socket can take before timing out
@@ -369,7 +369,7 @@ mongoose.connect(MONGODB_URI, mongoOptions)
     try {
       const EventState = require('./models/EventState');
       const { refreshEventStateCache } = require('./middleware/eventState');
-      
+
       // Use getEventState which handles upsert atomically
       const eventState = await EventState.getEventState();
       const stateObj = {
@@ -379,7 +379,7 @@ mongoose.connect(MONGODB_URI, mongoOptions)
         startedBy: eventState.startedBy,
         endedBy: eventState.endedBy
       };
-      
+
       await refreshEventStateCache(stateObj);
       console.log(`[EventState] Initialized: status=${eventState.status}`);
     } catch (err) {

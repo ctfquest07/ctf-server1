@@ -5,7 +5,7 @@ const ensureAdminPassword = async () => {
   try {
     // Find admin user
     let admin = await User.findOne({ email: 'admin@ctfquest.com' });
-    
+
     if (!admin) {
       // Create admin if doesn't exist
       admin = await User.create({
@@ -21,11 +21,9 @@ const ensureAdminPassword = async () => {
       await admin.save();
       console.log('Admin password updated to new secure password');
     }
-    
-    console.log('Admin credentials:');
-    console.log('Email: admin@ctfquest.com');
-    console.log('Password: Ctf#Quest@Admin$123');
-    
+
+    console.log('Admin credentials verified/updated successfully');
+
   } catch (error) {
     console.error('Error ensuring admin password:', error);
   }
