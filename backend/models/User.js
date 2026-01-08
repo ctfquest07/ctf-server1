@@ -46,6 +46,17 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Challenge'
   }],
+  personallySolvedChallenges: [{
+    challengeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Challenge'
+    },
+    challengeTitle: String,
+    solvedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   unlockedHints: [{
     challengeId: {
       type: mongoose.Schema.Types.ObjectId,

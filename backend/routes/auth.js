@@ -1141,7 +1141,7 @@ router.get('/users/:id', protect, async (req, res) => {
 router.get('/user/:id', protect, async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
-      .select('username points solvedChallenges unlockedHints team createdAt')
+      .select('username points solvedChallenges personallySolvedChallenges unlockedHints team createdAt')
       .populate('team', 'name');
 
     if (!user) {

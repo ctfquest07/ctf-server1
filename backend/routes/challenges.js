@@ -543,11 +543,18 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
     const session = await mongoose.startSession();
     try {
       await session.withTransaction(async () => {
-        // Update user with solve time
+        // Update user with solve time and track personal solve
         await User.findByIdAndUpdate(
           req.user._id,
           {
-            $addToSet: { solvedChallenges: challenge._id },
+            $addToSet: { 
+              solvedChallenges: challenge._id,
+              personallySolvedChallenges: {
+                challengeId: challenge._id,
+                challengeTitle: challenge.title,
+                solvedAt: new Date()
+              }
+            },
             $inc: { points: challenge.points },
             $set: { lastSolveTime: new Date() }
           },

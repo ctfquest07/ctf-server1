@@ -159,8 +159,8 @@ router.get('/', protect, async (req, res) => {
 router.get('/:id', protect, async (req, res) => {
   try {
     const team = await Team.findById(req.params.id)
-      .populate('members', 'username email points solvedChallenges unlockedHints')
-      .populate('captain', 'username email points solvedChallenges unlockedHints')
+      .populate('members', 'username email points solvedChallenges personallySolvedChallenges unlockedHints')
+      .populate('captain', 'username email points solvedChallenges personallySolvedChallenges unlockedHints')
       .populate('createdBy', 'username');
 
     if (!team) {
