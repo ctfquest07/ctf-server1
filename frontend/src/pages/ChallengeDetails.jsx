@@ -51,7 +51,7 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
             marginBottom: '15px',
             boxShadow: '0 0 10px rgba(139, 92, 246, 0.3)'
           }}>
-            ⚠️ CTF Event Has Ended - Submissions are no longer accepted
+             CTF Event Has Ended - Submissions are no longer accepted
           </div>
         )}
         {error && <div className="modal-error">{error}</div>}
@@ -250,7 +250,7 @@ function ChallengeDetails() {
           fontWeight: 'bold',
           boxShadow: '0 0 15px rgba(139, 92, 246, 0.3)'
         }}>
-          ⚠️ CTF Event Has Ended - Flag submissions are no longer accepted
+           CTF Event Has Ended - Flag submissions are no longer accepted
           {eventState?.endedAt && (
             <div style={{ fontSize: '14px', marginTop: '5px', opacity: 0.9 }}>
               Ended: {new Date(eventState.endedAt).toLocaleString()}
@@ -327,7 +327,7 @@ function ChallengeDetails() {
               fontWeight: 'bold',
               boxShadow: '0 0 10px rgba(139, 92, 246, 0.2)'
             }}>
-              ⚠️ Event Ended - Submissions are no longer accepted
+              CTF Event Has Ended - Flag submissions are no longer accepted
             </div>
           ) : (
             <button

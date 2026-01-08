@@ -140,8 +140,8 @@ function Scoreboard() {
           gap: '10px',
           boxShadow: '0 0 15px rgba(139, 92, 246, 0.3)'
         }}>
-          <span>🔒</span>
-          <span>FROZEN - Event Ended</span>
+          <span></span>
+          <span>CTF Event Has Ended</span>
           {eventEndedAt && (
             <span style={{ fontSize: '14px', opacity: 0.9, marginLeft: '10px' }}>
               (Ended: {new Date(eventEndedAt).toLocaleString()})

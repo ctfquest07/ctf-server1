@@ -730,7 +730,7 @@ function PlatformControl() {
                         onClick={() => handleBlockUser(u._id, u.isBlocked)}
                         title={u.isBlocked ? `Blocked: ${u.blockedReason || 'No reason'} - Click to unblock` : 'Click to block user'}
                       >
-                        {u.isBlocked ? '🔓 Unblock' : '🔒 Block'}
+                        {u.isBlocked ? ' Unblock' : ' Block'}
                       </button>
                     </td>
                     <td>
