@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import { initSecurity } from './utils/security'
 import './App.css'
@@ -7,45 +7,58 @@ import './enable-copy.css'
 // Context
 import { AuthProvider } from './context/AuthContext'
 
-// Components
+// Components (loaded immediately - they're used on every page)
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ProtectedRoute from './components/ProtectedRoute'
 import ScrollToTop from './components/ScrollToTop'
 import BackToTopButton from './components/BackToTopButton'
 
-// Pages
-import Home from './pages/Home'
-import Challenges from './pages/Challenges'
+// Loading component
+const PageLoader = () => (
+  <div style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: '60vh',
+    color: '#00ffaa',
+    fontSize: '1.2rem'
+  }}>
+    Loading...
+  </div>
+);
 
-import About from './pages/About'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import Profile from './pages/Profile'
-import Scoreboard from './pages/Scoreboard'
-import CreateChallenge from './pages/CreateChallenge'
-import EditChallenge from './pages/EditChallenge'
-import AdminDashboard from './pages/AdminDashboard'
-import AdminCreateUser from './pages/AdminCreateUser'
-import AdminCreateTeam from './pages/AdminCreateTeam'
-import TeamDetails from './pages/TeamDetails'
-import PrivacyPolicy from './pages/PrivacyPolicy'
-import TermsOfService from './pages/TermsOfService'
-import Documentation from './pages/Documentation'
-import AdminUserProfile from './pages/AdminUserProfile'
-import ContactUs from './pages/ContactUs'
-import AdminContactMessages from './pages/AdminContactMessages'
-import AdminLoginLogs from './pages/AdminLoginLogs'
-import PlatformControl from './pages/PlatformControl'
-import PlatformReset from './pages/PlatformReset'
-import UserBlocked from './pages/UserBlocked'
-import ChallengeDetails from './pages/ChallengeDetails'
-import Notice from './pages/Notice'
-import Analytics from './pages/Analytics'
-import AdminSubmissions from './pages/AdminSubmissions'
-import UserProfile from './pages/UserProfile'
-import AdminLiveMonitor from './pages/AdminLiveMonitor'
-import MyTeam from './pages/MyTeam'
+// Lazy load pages - only load when needed
+const Home = lazy(() => import('./pages/Home'))
+const Challenges = lazy(() => import('./pages/Challenges'))
+const About = lazy(() => import('./pages/About'))
+const Login = lazy(() => import('./pages/Login'))
+const Register = lazy(() => import('./pages/Register'))
+const Profile = lazy(() => import('./pages/Profile'))
+const Scoreboard = lazy(() => import('./pages/Scoreboard'))
+const CreateChallenge = lazy(() => import('./pages/CreateChallenge'))
+const EditChallenge = lazy(() => import('./pages/EditChallenge'))
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
+const AdminCreateUser = lazy(() => import('./pages/AdminCreateUser'))
+const AdminCreateTeam = lazy(() => import('./pages/AdminCreateTeam'))
+const TeamDetails = lazy(() => import('./pages/TeamDetails'))
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
+const TermsOfService = lazy(() => import('./pages/TermsOfService'))
+const Documentation = lazy(() => import('./pages/Documentation'))
+const AdminUserProfile = lazy(() => import('./pages/AdminUserProfile'))
+const ContactUs = lazy(() => import('./pages/ContactUs'))
+const AdminContactMessages = lazy(() => import('./pages/AdminContactMessages'))
+const AdminLoginLogs = lazy(() => import('./pages/AdminLoginLogs'))
+const PlatformControl = lazy(() => import('./pages/PlatformControl'))
+const PlatformReset = lazy(() => import('./pages/PlatformReset'))
+const UserBlocked = lazy(() => import('./pages/UserBlocked'))
+const ChallengeDetails = lazy(() => import('./pages/ChallengeDetails'))
+const Notice = lazy(() => import('./pages/Notice'))
+const Analytics = lazy(() => import('./pages/Analytics'))
+const AdminSubmissions = lazy(() => import('./pages/AdminSubmissions'))
+const UserProfile = lazy(() => import('./pages/UserProfile'))
+const AdminLiveMonitor = lazy(() => import('./pages/AdminLiveMonitor'))
+const MyTeam = lazy(() => import('./pages/MyTeam'))
 
 function App() {
   useEffect(() => {
@@ -84,8 +97,9 @@ function App() {
         <div className="app-container">
           <Navbar />
           <main className="main-content">
-            <Routes>
-              <Route path="/" element={<Home />} />
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<Home />} />
               <Route path="/challenges" element={
                 <ProtectedRoute>
                   <Challenges />
@@ -196,7 +210,8 @@ function App() {
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/documentation" element={<Documentation />} />
-            </Routes>
+              </Routes>
+            </Suspense>
           </main>
           <Footer />
           <BackToTopButton />
