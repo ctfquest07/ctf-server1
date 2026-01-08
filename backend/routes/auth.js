@@ -573,9 +573,10 @@ router.get('/scoreboard', protect, async (req, res) => {
       console.warn('Redis cache error:', e);
     }
 
+    const Submission = require('../models/Submission');
+    
     if (type === 'teams') {
       const Team = require('../models/Team');
-      const Submission = require('../models/Submission');
       
       // Use MongoDB aggregation pipeline for performance (critical for 500+ users)
       const pipeline = [
@@ -798,6 +799,7 @@ router.get('/scoreboard', protect, async (req, res) => {
     // I will instantiate it here but inside the route is risky.
     // BETTER PLAN: Update top of file to import Redis, then update this chunk.
   } catch (error) {
+    console.error('Scoreboard error:', error);
     res.status(500).json({
       success: false,
       message: process.env.NODE_ENV === 'development' ? error.message : 'Error fetching scoreboard'
