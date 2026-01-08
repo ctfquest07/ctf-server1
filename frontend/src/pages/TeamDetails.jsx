@@ -188,7 +188,6 @@ function TeamDetails() {
                     <div key={idx} className="hint-detail-card">
                       <div className="hint-info">
                         <span className="hint-challenge">{hint.challengeTitle || 'Unknown Challenge'}</span>
-                        <span className="hint-meta">Hint #{hint.hintIndex + 1}</span>
                       </div>
                       <div className="hint-cost-badge">{hint.hintCost} pts</div>
                     </div>

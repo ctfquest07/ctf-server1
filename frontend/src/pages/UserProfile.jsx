@@ -135,7 +135,6 @@ function UserProfile() {
                     <span className="hint-cost-badge">{hint.hintCost} pts</span>
                   </div>
                   <div className="hint-card-meta">
-                    <span className="hint-number">Hint #{hint.hintIndex + 1}</span>
                     <span className="hint-date">
                       {new Date(hint.unlockedAt).toLocaleDateString()}
                     </span>
