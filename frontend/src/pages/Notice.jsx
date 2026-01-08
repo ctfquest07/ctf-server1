@@ -12,6 +12,7 @@ function Notice() {
 
   useEffect(() => {
     fetchNotices();
+    markAllAsRead();
   }, []);
 
   const fetchNotices = async () => {
@@ -28,6 +29,20 @@ function Notice() {
     }
   };
 
+  const markAllAsRead = async () => {
+    if (!isAuthenticated) return;
+    
+    try {
+      await axios.post('/api/notices/mark-all-read');
+      // Notify navbar to update badge
+      setTimeout(() => {
+        window.dispatchEvent(new Event('noticeRead'));
+      }, 500);
+    } catch (err) {
+      console.error('Error marking all notices as read:', err);
+    }
+  };
+
   const markAsRead = async (noticeId) => {
     if (!isAuthenticated) return;
     
@@ -40,11 +55,6 @@ function Notice() {
 
   const handleNoticeClick = (notice) => {
     setSelectedNotice(notice);
-    markAsRead(notice._id);
-    // Refresh the page after a short delay to update the badge
-    setTimeout(() => {
-      window.dispatchEvent(new Event('noticeRead'));
-    }, 500);
   };
 
   if (loading) {

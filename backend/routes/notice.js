@@ -51,6 +51,44 @@ router.get('/unread-count', protect, async (req, res) => {
   }
 });
 
+// @route   POST /api/notices/mark-all-read
+// @desc    Mark all notices as read by logged in user
+// @access  Private
+router.post('/mark-all-read', protect, async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.id;
+    
+    // Get all active notices that user hasn't read
+    const unreadNotices = await Notice.find({ 
+      isActive: true,
+      readBy: { $ne: userId }
+    });
+    
+    // Mark all as read
+    await Notice.updateMany(
+      { 
+        isActive: true,
+        readBy: { $ne: userId }
+      },
+      { 
+        $addToSet: { readBy: userId }
+      }
+    );
+    
+    res.json({
+      success: true,
+      message: `Marked ${unreadNotices.length} notices as read`
+    });
+  } catch (err) {
+    console.error('Error marking all notices as read:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: err.message
+    });
+  }
+});
+
 // @route   POST /api/notices/:id/mark-read
 // @desc    Mark notice as read by logged in user
 // @access  Private
