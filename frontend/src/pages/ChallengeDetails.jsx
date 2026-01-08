@@ -5,6 +5,72 @@ import AuthContext from '../context/AuthContext'
 import { useEventState } from '../hooks/useEventState'
 import './ChallengeDetails.css'
 
+const SolvesModal = ({ challenge, onClose }) => {
+  const [solves, setSolves] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { token } = useContext(AuthContext);
+
+  useEffect(() => {
+    const fetchSolves = async () => {
+      try {
+        const config = token ? {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        } : {};
+        const res = await axios.get(`/api/challenges/${challenge._id}/solves`, config);
+        setSolves(res.data.data || []);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching solves:', err);
+        setLoading(false);
+      }
+    };
+
+    fetchSolves();
+  }, [challenge._id, token]);
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content solves-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>{challenge.title} - Solves ({solves.length})</h3>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+
+        {loading ? (
+          <div className="modal-loading">Loading solves...</div>
+        ) : solves.length === 0 ? (
+          <div className="no-solves">No one has solved this challenge yet!</div>
+        ) : (
+          <div className="solves-list">
+            <table className="solves-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>User</th>
+                  <th>Team</th>
+                  <th>Solved At</th>
+                </tr>
+              </thead>
+              <tbody>
+                {solves.map((solve, index) => (
+                  <tr key={index}>
+                    <td>{index + 1}</td>
+                    <td>{solve.username}</td>
+                    <td>{solve.team}</td>
+                    <td>{new Date(solve.solvedAt).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
   const [flag, setFlag] = useState('');
   const [error, setError] = useState('');
@@ -93,6 +159,7 @@ function ChallengeDetails() {
   const [showModal, setShowModal] = useState(false);
   const [unlockedHints, setUnlockedHints] = useState([]);
   const [unlockingHint, setUnlockingHint] = useState(null);
+  const [showSolvesModal, setShowSolvesModal] = useState(false);
   const { user, isAuthenticated, token, updateUserData } = useContext(AuthContext);
   const { eventState, isEnded } = useEventState();
 
@@ -270,7 +337,13 @@ function ChallengeDetails() {
             </span>
             <span className="points-badge">{challenge.points} pts</span>
             <span className="category-badge">{challenge.category}</span>
-            <span className="solved-count">{challenge.solvedBy?.length || 0} solves</span>
+            <span
+              className="solved-count clickable"
+              onClick={() => setShowSolvesModal(true)}
+              style={{ cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              {challenge.solvedBy?.length || 0} solves
+            </span>
           </div>
 
           <div className="description">
@@ -336,6 +409,13 @@ function ChallengeDetails() {
           </div>
         </div>
       </div>
+
+      {showSolvesModal && challenge && (
+        <SolvesModal
+          challenge={challenge}
+          onClose={() => setShowSolvesModal(false)}
+        />
+      )}
 
       {showModal && challenge && (
         <FlagSubmissionModal
