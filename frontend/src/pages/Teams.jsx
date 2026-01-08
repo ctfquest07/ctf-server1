@@ -7,6 +7,8 @@ function Teams() {
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
     const [pagination, setPagination] = useState({
         page: 1,
         pages: 1,
@@ -14,10 +16,10 @@ function Teams() {
     });
     const navigate = useNavigate();
 
-    const fetchTeams = async (page = 1) => {
+    const fetchTeams = async (page = 1, q = '') => {
         try {
             setLoading(true);
-            const res = await axios.get(`/api/teams?page=${page}&limit=12`);
+            const res = await axios.get(`/api/teams?page=${page}&limit=20&q=${q}`);
             setTeams(res.data.data || []);
             setPagination({
                 page: res.data.page,
@@ -34,71 +36,90 @@ function Teams() {
     };
 
     useEffect(() => {
-        fetchTeams();
-    }, []);
+        fetchTeams(1, searchQuery);
+    }, [searchQuery]);
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        setSearchQuery(searchTerm);
+    };
 
     const handlePageChange = (newPage) => {
         if (newPage >= 1 && newPage <= pagination.pages) {
-            fetchTeams(newPage);
+            fetchTeams(newPage, searchQuery);
         }
     };
-
-    if (loading && teams.length === 0) {
-        return (
-            <div className="teams-page-container">
-                <div className="loading">Loading teams...</div>
-            </div>
-        );
-    }
 
     return (
         <div className="teams-page-container">
             <div className="teams-header">
-                <h1 className="page-title">Participating Teams</h1>
-                <p className="page-subtitle">Showing all {pagination.total} teams competing in CTFQuest</p>
+                <h1 className="minimal-title">Teams</h1>
             </div>
 
             <div className="teams-main">
-                {error ? (
+                <div className="search-container">
+                    <form className="search-form" onSubmit={handleSearch}>
+                        <div className="search-group">
+                            <select className="search-select">
+                                <option>Name</option>
+                            </select>
+                            <input
+                                type="text"
+                                className="search-input"
+                                placeholder="Search for matching teams"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                            <button type="submit" className="search-btn">
+                                <i className="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <hr className="minimal-divider" />
+
+                {loading ? (
+                    <div className="loading">Loading...</div>
+                ) : error ? (
                     <div className="error">{error}</div>
                 ) : teams.length === 0 ? (
-                    <div className="no-teams">No teams have registered yet.</div>
+                    <div className="no-teams">No teams found.</div>
                 ) : (
                     <>
-                        <div className="teams-grid">
-                            {teams.map((team) => (
-                                <div
-                                    key={team._id}
-                                    className="team-card"
-                                    onClick={() => navigate(`/team/${team._id}`)}
-                                >
-                                    <div className="team-card-header">
-                                        <div className="team-avatar">
-                                            {team.name.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div className="team-info">
-                                            <h3 className="team-name">{team.name}</h3>
-                                            <span className="team-member-count">
-                                                {team.members?.length || 0} Members
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="team-card-body">
-                                        <p className="team-description">
-                                            {team.description || "No description provided."}
-                                        </p>
-                                    </div>
-                                    <div className="team-card-footer">
-                                        <div className="team-stats">
-                                            <div className="stat">
-                                                <span className="stat-label">Points</span>
-                                                <span className="stat-value">{team.points || 0}</span>
-                                            </div>
-                                        </div>
-                                        <button className="view-team-btn">View Profile</button>
-                                    </div>
-                                </div>
-                            ))}
+                        <div className="table-responsive">
+                            <table className="minimal-table">
+                                <thead>
+                                    <tr>
+                                        <th className="team-col">Team</th>
+                                        <th className="website-col">Website</th>
+                                        <th className="affiliation-col">Affiliation</th>
+                                        <th className="country-col">Country</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {teams.map((team) => (
+                                        <tr
+                                            key={team._id}
+                                            className="clickable-row"
+                                            onClick={() => navigate(`/team/${team._id}`)}
+                                        >
+                                            <td className="team-col">
+                                                <span className="team-link">{team.name}</span>
+                                            </td>
+                                            <td className="website-col">
+                                                {team.website ? (
+                                                    <a href={team.website} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                                                        <i className="fas fa-external-link-alt"></i>
+                                                    </a>
+                                                ) : '-'}
+                                            </td>
+                                            <td className="affiliation-col">{team.affiliation || '-'}</td>
+                                            <td className="country-col">{team.country || '-'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
 
                         {pagination.pages > 1 && (

@@ -29,7 +29,6 @@ const CompetitionTimerSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Ensure only one timer document exists
-CompetitionTimerSchema.index({ _id: 1 }, { unique: true });
+// Mongoose handles _id uniqueness by default
 
 module.exports = mongoose.model('CompetitionTimer', CompetitionTimerSchema);

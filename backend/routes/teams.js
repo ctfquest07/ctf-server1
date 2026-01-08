@@ -127,9 +127,12 @@ router.get('/', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const search = req.query.q || '';
 
-    const total = await Team.countDocuments();
-    const teams = await Team.find()
+    const query = search ? { name: { $regex: search, $options: 'i' } } : {};
+
+    const total = await Team.countDocuments(query);
+    const teams = await Team.find(query)
       .populate('members', 'username email points')
       .populate('captain', 'username email points')
       .populate('createdBy', 'username')
