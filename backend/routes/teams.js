@@ -28,12 +28,12 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
 
     // Validate member IDs exist and are valid users
     if (members && members.length > 0) {
-      const validMembers = await User.find({ 
+      const validMembers = await User.find({
         _id: { $in: members },
         role: 'user',
         team: { $exists: false }
       });
-      
+
       if (validMembers.length !== members.length) {
         return res.status(400).json({
           success: false,
@@ -86,7 +86,7 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
 router.get('/my/team', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('team');
-    
+
     if (!user || !user.team) {
       return res.status(404).json({
         success: false,
@@ -121,8 +121,8 @@ router.get('/my/team', protect, async (req, res) => {
 
 // @route   GET /api/teams
 // @desc    Get all teams with pagination
-// @access  Private
-router.get('/', protect, async (req, res) => {
+// @access  Public
+router.get('/', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -175,7 +175,7 @@ router.get('/:id', protect, async (req, res) => {
 
     // Calculate team points from members
     const calculatedPoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);
-    
+
     // Update team object with calculated points
     const teamData = team.toObject();
     teamData.points = calculatedPoints;
@@ -221,7 +221,7 @@ router.put('/:id', protect, authorize('admin', 'superadmin'), async (req, res) =
     if (description) team.description = description;
     if (members) {
       team.members = members;
-      
+
       await User.updateMany(
         { _id: { $in: oldMembers } },
         { $unset: { team: 1 } }

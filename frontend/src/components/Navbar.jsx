@@ -33,10 +33,10 @@ function Navbar() {
       const timeoutId = setTimeout(() => {
         fetchUnreadCount();
       }, 100);
-      
+
       // Poll every 30 seconds for new notices
       const interval = setInterval(fetchUnreadCount, 30000);
-      
+
       // Refresh when tab becomes visible
       const handleVisibilityChange = () => {
         if (!document.hidden && isAuthenticated) {
@@ -44,13 +44,13 @@ function Navbar() {
         }
       };
       document.addEventListener('visibilitychange', handleVisibilityChange);
-      
+
       // Listen for notice read events
       const handleNoticeRead = () => {
         fetchUnreadCount();
       };
       window.addEventListener('noticeRead', handleNoticeRead);
-      
+
       return () => {
         clearTimeout(timeoutId);
         clearInterval(interval);
@@ -68,7 +68,7 @@ function Navbar() {
     if (!isAuthenticated || !localStorage.getItem('token')) {
       return;
     }
-    
+
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get('/api/notices/unread-count', {
@@ -77,12 +77,12 @@ function Navbar() {
         }
       });
       const newCount = response.data.count;
-      
+
       // Play notification sound if count increased (but not on first load)
       if (previousCountRef.current !== null && newCount > previousCountRef.current) {
         playNotificationSound();
       }
-      
+
       previousCountRef.current = newCount;
       setUnreadNoticeCount(newCount);
     } catch (err) {
@@ -172,6 +172,7 @@ function Navbar() {
         <div className={`navbar-content ${isMenuOpen ? 'active' : ''}`} ref={menuRef}>
           <ul className="navbar-links">
             <li><Link to="/" className={`nav-link ${isActiveLink('/') ? 'active' : ''}`}>Home</Link></li>
+            <li><Link to="/teams" className={`nav-link ${isActiveLink('/teams') ? 'active' : ''}`}>Teams</Link></li>
             {isAuthenticated && (
               <li><Link to="/challenges" className={`nav-link ${isActiveLink('/challenges') ? 'active' : ''}`}>Challenges</Link></li>
             )}
@@ -213,92 +214,92 @@ function Navbar() {
             {isAuthenticated ? (
               <div className="auth-section">
                 <div className="user-menu" ref={dropdownRef}>
-                <button
-                  className="user-button"
-                  onClick={toggleDropdown}
-                  aria-expanded={isDropdownOpen}
-                  aria-haspopup="true"
-                  aria-label={`User menu for ${user?.username}`}
-                >
-                  <div className="user-avatar">
-                    {user?.username.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="username">{user?.username}</span>
-                  <i className={`fas fa-chevron-${isDropdownOpen ? 'up' : 'down'}`}></i>
-                </button>
-
-                {isDropdownOpen && (
-                  <div className="dropdown-menu" role="menu">
-                    <div className="dropdown-header">Account</div>
-                    <Link 
-                      to="/profile" 
-                      className="dropdown-item" 
-                      onClick={() => setIsDropdownOpen(false)}
-                      role="menuitem"
-                    >
-                      <i className="fas fa-user"></i>
-                      Profile
-                    </Link>
-                    {isAuthenticated && (
-                      <Link 
-                        to="/challenges" 
-                        className="dropdown-item" 
-                        onClick={() => setIsDropdownOpen(false)}
-                        role="menuitem"
-                      >
-                        <i className="fas fa-flag"></i>
-                        Challenges
-                      </Link>
-                    )}
-                    {isAuthenticated && (
-                      <Link 
-                        to="/my-team" 
-                        className="dropdown-item" 
-                        onClick={() => setIsDropdownOpen(false)}
-                        role="menuitem"
-                      >
-                        <i className="fas fa-users"></i>
-                        My Team
-                      </Link>
-                    )}
-
-                    {user?.role === 'admin' && (
-                      <>
-                        <div className="dropdown-divider"></div>
-                        <div className="dropdown-header">Admin</div>
-                        <Link 
-                          to="/admin" 
-                          className="dropdown-item" 
-                          onClick={() => setIsDropdownOpen(false)}
-                          role="menuitem"
-                        >
-                          <i className="fas fa-cog"></i>
-                          Dashboard
-                        </Link>
-                        <Link 
-                          to="/admin/messages" 
-                          className="dropdown-item" 
-                          onClick={() => setIsDropdownOpen(false)}
-                          role="menuitem"
-                        >
-                          <i className="fas fa-envelope"></i>
-                          Messages
-                        </Link>
-                      </>
-                    )}
-                    <div className="dropdown-divider"></div>
-                    <div className="dropdown-footer">
-                      <button
-                        className="dropdown-item logout"
-                        onClick={handleLogout}
-                        role="menuitem"
-                      >
-                        <i className="fas fa-sign-out-alt"></i>
-                        Logout
-                      </button>
+                  <button
+                    className="user-button"
+                    onClick={toggleDropdown}
+                    aria-expanded={isDropdownOpen}
+                    aria-haspopup="true"
+                    aria-label={`User menu for ${user?.username}`}
+                  >
+                    <div className="user-avatar">
+                      {user?.username.charAt(0).toUpperCase()}
                     </div>
-                  </div>
-                )}
+                    <span className="username">{user?.username}</span>
+                    <i className={`fas fa-chevron-${isDropdownOpen ? 'up' : 'down'}`}></i>
+                  </button>
+
+                  {isDropdownOpen && (
+                    <div className="dropdown-menu" role="menu">
+                      <div className="dropdown-header">Account</div>
+                      <Link
+                        to="/profile"
+                        className="dropdown-item"
+                        onClick={() => setIsDropdownOpen(false)}
+                        role="menuitem"
+                      >
+                        <i className="fas fa-user"></i>
+                        Profile
+                      </Link>
+                      {isAuthenticated && (
+                        <Link
+                          to="/challenges"
+                          className="dropdown-item"
+                          onClick={() => setIsDropdownOpen(false)}
+                          role="menuitem"
+                        >
+                          <i className="fas fa-flag"></i>
+                          Challenges
+                        </Link>
+                      )}
+                      {isAuthenticated && (
+                        <Link
+                          to="/my-team"
+                          className="dropdown-item"
+                          onClick={() => setIsDropdownOpen(false)}
+                          role="menuitem"
+                        >
+                          <i className="fas fa-users"></i>
+                          My Team
+                        </Link>
+                      )}
+
+                      {user?.role === 'admin' && (
+                        <>
+                          <div className="dropdown-divider"></div>
+                          <div className="dropdown-header">Admin</div>
+                          <Link
+                            to="/admin"
+                            className="dropdown-item"
+                            onClick={() => setIsDropdownOpen(false)}
+                            role="menuitem"
+                          >
+                            <i className="fas fa-cog"></i>
+                            Dashboard
+                          </Link>
+                          <Link
+                            to="/admin/messages"
+                            className="dropdown-item"
+                            onClick={() => setIsDropdownOpen(false)}
+                            role="menuitem"
+                          >
+                            <i className="fas fa-envelope"></i>
+                            Messages
+                          </Link>
+                        </>
+                      )}
+                      <div className="dropdown-divider"></div>
+                      <div className="dropdown-footer">
+                        <button
+                          className="dropdown-item logout"
+                          onClick={handleLogout}
+                          role="menuitem"
+                        >
+                          <i className="fas fa-sign-out-alt"></i>
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
