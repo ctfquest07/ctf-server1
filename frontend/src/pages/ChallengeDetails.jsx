@@ -43,7 +43,14 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
         </div>
 
         {isEnded && (
-          <div className="modal-error" style={{ backgroundColor: '#ff4444', color: 'white', padding: '15px', marginBottom: '15px' }}>
+          <div className="modal-error" style={{ 
+            backgroundColor: 'rgba(139, 92, 246, 0.2)', 
+            border: '2px solid #8b5cf6',
+            color: '#c4b5fd', 
+            padding: '15px', 
+            marginBottom: '15px',
+            boxShadow: '0 0 10px rgba(139, 92, 246, 0.3)'
+          }}>
             ⚠️ CTF Event Has Ended - Submissions are no longer accepted
           </div>
         )}
@@ -233,13 +240,15 @@ function ChallengeDetails() {
     <div className="challenge-details-container">
       {isEnded && (
         <div style={{
-          backgroundColor: '#ff4444',
-          color: 'white',
+          backgroundColor: 'rgba(139, 92, 246, 0.2)',
+          border: '2px solid #8b5cf6',
+          color: '#c4b5fd',
           padding: '15px',
           textAlign: 'center',
           marginBottom: '20px',
           borderRadius: '5px',
-          fontWeight: 'bold'
+          fontWeight: 'bold',
+          boxShadow: '0 0 15px rgba(139, 92, 246, 0.3)'
         }}>
           ⚠️ CTF Event Has Ended - Flag submissions are no longer accepted
           {eventState?.endedAt && (
@@ -310,11 +319,13 @@ function ChallengeDetails() {
           {isEnded ? (
             <div style={{
               padding: '15px',
-              backgroundColor: '#ffe6e6',
+              backgroundColor: 'rgba(139, 92, 246, 0.15)',
+              border: '2px solid #8b5cf6',
               borderRadius: '5px',
               textAlign: 'center',
-              color: '#ff4444',
-              fontWeight: 'bold'
+              color: '#c4b5fd',
+              fontWeight: 'bold',
+              boxShadow: '0 0 10px rgba(139, 92, 246, 0.2)'
             }}>
               ⚠️ Event Ended - Submissions are no longer accepted
             </div>

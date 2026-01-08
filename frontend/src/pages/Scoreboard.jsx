@@ -126,8 +126,9 @@ function Scoreboard() {
     <div className="scoreboard-container">
       {(eventEnded || isEventEnded) && (
         <div style={{
-          backgroundColor: '#ff4444',
-          color: 'white',
+          backgroundColor: 'rgba(139, 92, 246, 0.2)',
+          border: '2px solid #8b5cf6',
+          color: '#c4b5fd',
           padding: '15px',
           textAlign: 'center',
           marginBottom: '20px',
@@ -136,7 +137,8 @@ function Scoreboard() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '10px'
+          gap: '10px',
+          boxShadow: '0 0 15px rgba(139, 92, 246, 0.3)'
         }}>
           <span>🔒</span>
           <span>FROZEN - Event Ended</span>

@@ -478,21 +478,22 @@ function PlatformControl() {
       <div className="platform-controls-section">
         <div className="global-controls">
           {/* CTF Event Control */}
-          <div className="control-card" style={{ border: eventState?.status === 'ended' ? '2px solid #ff4444' : '1px solid #ddd' }}>
+          <div className="control-card" style={{ border: eventState?.status === 'ended' ? '2px solid #8b5cf6' : '1px solid #ddd', boxShadow: eventState?.status === 'ended' ? '0 0 15px rgba(139, 92, 246, 0.3)' : 'none' }}>
             <h3>CTF Event Control</h3>
             <p>Manually START or END the CTF event. When ended, all submissions are blocked and leaderboard is frozen.</p>
             
             {eventState && (
-              <div className="event-state-display" style={{ marginBottom: '15px', padding: '10px', backgroundColor: eventState.status === 'ended' ? '#ffe6e6' : eventState.status === 'started' ? '#e6ffe6' : '#f0f0f0', borderRadius: '5px' }}>
+              <div className="event-state-display" style={{ marginBottom: '15px', padding: '10px', backgroundColor: eventState.status === 'ended' ? 'rgba(139, 92, 246, 0.15)' : eventState.status === 'started' ? 'rgba(34, 197, 94, 0.15)' : '#f0f0f0', borderRadius: '5px', border: eventState.status === 'ended' ? '1px solid #8b5cf6' : eventState.status === 'started' ? '1px solid #22c55e' : '1px solid #ddd' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
                   <span style={{ 
                     fontSize: '20px', 
                     fontWeight: 'bold',
-                    color: eventState.status === 'ended' ? '#ff4444' : eventState.status === 'started' ? '#44ff44' : '#888'
+                    color: eventState.status === 'ended' ? '#8b5cf6' : eventState.status === 'started' ? '#22c55e' : '#888',
+                    textShadow: eventState.status === 'ended' ? '0 0 10px rgba(139, 92, 246, 0.5)' : eventState.status === 'started' ? '0 0 10px rgba(34, 197, 94, 0.5)' : 'none'
                   }}>
                     {eventState.status === 'ended' ? '●' : eventState.status === 'started' ? '●' : '○'}
                   </span>
-                  <span style={{ fontSize: '18px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                  <span style={{ fontSize: '18px', fontWeight: 'bold', textTransform: 'uppercase', color: eventState.status === 'ended' ? '#c4b5fd' : eventState.status === 'started' ? '#86efac' : '#888' }}>
                     {eventState.status === 'not_started' ? 'Not Started' : eventState.status === 'started' ? 'Started' : 'Ended'}
                   </span>
                 </div>
@@ -502,21 +503,21 @@ function PlatformControl() {
                   </p>
                 )}
                 {eventState.endedAt && (
-                  <p style={{ margin: '5px 0', fontSize: '14px', color: '#ff4444', fontWeight: 'bold' }}>
+                  <p style={{ margin: '5px 0', fontSize: '14px', color: '#c4b5fd', fontWeight: 'bold' }}>
                     Ended: {new Date(eventState.endedAt).toLocaleString()}
                   </p>
                 )}
                 {eventState.status === 'ended' && (
-                  <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#fff', borderRadius: '5px', border: '1px solid #ff4444' }}>
-                    <strong style={{ color: '#ff4444' }}>⚠️ Event Ended</strong>
-                    <p style={{ margin: '5px 0', fontSize: '13px' }}>All flag submissions are blocked. Leaderboard is frozen.</p>
+                  <div style={{ marginTop: '10px', padding: '10px', backgroundColor: 'rgba(139, 92, 246, 0.1)', borderRadius: '5px', border: '1px solid #8b5cf6' }}>
+                    <strong style={{ color: '#c4b5fd' }}>⚠️ Event Ended</strong>
+                    <p style={{ margin: '5px 0', fontSize: '13px', color: '#c4b5fd' }}>All flag submissions are blocked. Leaderboard is frozen.</p>
                   </div>
                 )}
               </div>
             )}
 
             {eventStateError && (
-              <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#ffe6e6', borderRadius: '5px', color: '#ff4444' }}>
+              <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: 'rgba(139, 92, 246, 0.15)', borderRadius: '5px', color: '#c4b5fd', border: '1px solid #8b5cf6' }}>
                 {eventStateError}
               </div>
             )}
