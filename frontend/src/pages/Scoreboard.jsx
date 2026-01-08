@@ -152,13 +152,13 @@ function Scoreboard() {
           className={`tab-button ${viewType === 'teams' ? 'active' : ''}`}
           onClick={() => setViewType('teams')}
         >
-          Teams ({teams.length})
+          TEAMS
         </button>
         <button
           className={`tab-button ${viewType === 'users' ? 'active' : ''}`}
           onClick={() => setViewType('users')}
         >
-          Users ({users.length})
+          USERS
         </button>
       </div>
 

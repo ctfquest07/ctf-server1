@@ -45,10 +45,11 @@
 }
 
 .tab-button.active {
-  background: #00aaff;
-  border-color: #00aaff;
+  background: #00ffaa;
+  border-color: #00ffaa;
   color: #000000;
   font-weight: 600;
+  box-shadow: 0 0 10px rgba(0, 255, 170, 0.2);
 }
 
 .scoreboard-table-container {
@@ -89,7 +90,7 @@
 }
 
 .scoreboard-table tbody tr:hover {
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: rgba(0, 255, 170, 0.03);
 }
 
 .username-link,
@@ -102,19 +103,19 @@
   font-weight: 500;
   text-decoration: none;
   padding: 0;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
   text-align: left;
 }
 
 .username-link:hover,
 .team-name-link:hover {
-  color: #00aaff;
-  text-decoration: underline;
+  color: #00ffaa;
+  text-decoration: none;
 }
 
 .points-value {
   font-weight: 600;
-  color: #00aaff;
+  color: #00ffaa;
   font-size: 1.1rem;
 }
 
@@ -137,7 +138,7 @@
 .points-column {
   width: 25%;
   text-align: right;
-  color: #00aaff;
+  color: #00ffaa;
 }
 
 .challenges-column {

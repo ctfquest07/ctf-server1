@@ -13,15 +13,14 @@
   padding: 1.5rem 0;
   z-index: 100;
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 .challenge-details-header .header-content {
-  max-width: 1200px;
-  padding: 0 2rem;
+  width: 100%;
+  padding: 0 4rem;
+  /* Add padding to avoid overlapping button on very small screens if title is long */
   text-align: center;
+  box-sizing: border-box;
 }
 
 .challenge-details-header h1 {
@@ -54,7 +53,6 @@
 }
 
 .back-button:hover {
-  transform: translate(-5px, -50%);
   color: #33bbff;
   text-shadow: 0 0 10px rgba(0, 170, 255, 0.3);
 }
