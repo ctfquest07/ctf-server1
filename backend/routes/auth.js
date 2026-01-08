@@ -563,237 +563,80 @@ router.get('/scoreboard', protect, async (req, res) => {
 
     // Check Redis Cache
     const cacheKey = `scoreboard:${type}`;
+    const zsetKey = `scoreboard:${type}:zset`;
+    const weight = Math.pow(10, 10);
 
-    try {
-      const cachedData = await redisClient.get(cacheKey);
-      if (cachedData) {
-        const parsedData = JSON.parse(cachedData);
-        return res.json({
-          success: true,
-          type: type,
-          data: parsedData,
-          cached: true,
-          eventEnded: isEventEnded,
-          eventEndedAt: isEventEnded ? eventState.endedAt : null
-        });
+    // 1. Try to fetch top 100 from Redis ZSET (High Performance)
+    let rankedIds = await redisClient.zrevrange(zsetKey, 0, 99);
+
+    // 2. If ZSET is empty, rebuild it from MongoDB (Self-Healing)
+    if (rankedIds.length === 0) {
+      console.log(`[Scoreboard] ZSET ${zsetKey} empty, rebuilding...`);
+      const Submission = require('../models/Submission');
+
+      if (type === 'teams') {
+        const Team = require('../models/Team');
+        // Aggregate totals for all teams
+        const teams = await Team.find({}).populate('members', 'points lastSolveTime');
+        for (const team of teams) {
+          const totalPoints = team.members.reduce((sum, m) => sum + (m.points || 0), 0);
+          const lastSolve = team.members.reduce((max, m) => (m.lastSolveTime > max ? m.lastSolveTime : max), new Date(0));
+          const nowSeconds = lastSolve ? Math.floor(new Date(lastSolve).getTime() / 1000) : 0;
+          const score = totalPoints * weight + (weight - nowSeconds);
+          if (totalPoints > 0) await redisClient.zadd(zsetKey, score, team._id.toString());
+        }
+      } else {
+        const users = await User.find({ role: 'user', showInScoreboard: { $ne: false } });
+        for (const user of users) {
+          const nowSeconds = user.lastSolveTime ? Math.floor(new Date(user.lastSolveTime).getTime() / 1000) : 0;
+          const score = user.points * weight + (weight - nowSeconds);
+          if (user.points > 0) await redisClient.zadd(zsetKey, score, user._id.toString());
+        }
       }
-    } catch (e) {
-      console.warn('Redis cache error:', e);
+      // Re-fetch after rebuild
+      rankedIds = await redisClient.zrevrange(zsetKey, 0, 99);
     }
 
-    const Submission = require('../models/Submission');
-    
+    // 3. Fetch full details for the ranked IDs
+    let rankedData = [];
     if (type === 'teams') {
       const Team = require('../models/Team');
-      
-      // Use MongoDB aggregation pipeline for performance (critical for 500+ users)
-      const pipeline = [
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'members',
-            foreignField: '_id',
-            as: 'memberDetails'
-          }
-        },
-        {
-          $addFields: {
-            totalPoints: { $sum: '$memberDetails.points' },
-            lastSolveTime: { $max: '$memberDetails.lastSolveTime' },
-            visibleMembers: {
-              $filter: {
-                input: '$memberDetails',
-                as: 'member',
-                cond: { $ne: ['$$member.showInScoreboard', false] }
-              }
-            }
-          }
-        }
-      ];
-
-      // Filter by role - only show teams with visible members for non-admins
-      if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
-        pipeline.push({
-          $match: {
-            $expr: { $gt: [{ $size: '$visibleMembers' }, 0] }
-          }
-        });
-      }
-
-      // Sort and limit
-      pipeline.push(
-        { $sort: { totalPoints: -1, lastSolveTime: 1, name: 1 } },
-        { $limit: 50 }, // Get top 50 for tie-breaking calculation
-        {
-          $project: {
-            _id: 1,
-            name: 1,
-            description: 1,
-            points: '$totalPoints',
-            lastSolveTime: 1,
-            members: '$memberDetails',
-            solvedChallenges: 1,
-            createdAt: 1,
-            createdBy: 1
-          }
-        }
-      );
-
-      let teamsWithPoints = await Team.aggregate(pipeline);
-
-      // OPTIMIZED: Fetch ALL submissions in ONE query instead of N queries (one per team)
-      // Critical for performance with 500 concurrent users
-      const allMemberIds = teamsWithPoints.flatMap(team => 
-        team.members ? team.members.map(m => m._id) : []
-      );
-
-      // Single bulk query for all team submissions
-      const allSubmissions = await Submission.find({
-        user: { $in: allMemberIds },
-        isCorrect: true
-      }).select('submittedAt points user').sort({ submittedAt: 1 }).lean();
-
-      // Group submissions by user for fast lookup
-      const submissionsByUser = {};
-      allSubmissions.forEach(sub => {
-        if (!submissionsByUser[sub.user]) {
-          submissionsByUser[sub.user] = [];
-        }
-        submissionsByUser[sub.user].push(sub);
-      });
-
-      // Calculate tie-breaking timestamp for each team
-      for (const team of teamsWithPoints) {
-        if (team.points > 0 && team.members && team.members.length > 0) {
-          // Collect all submissions for this team's members
-          const teamSubmissions = [];
-          team.members.forEach(member => {
-            const userSubs = submissionsByUser[member._id.toString()] || [];
-            teamSubmissions.push(...userSubs);
-          });
-
-          // Sort by time
-          teamSubmissions.sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt));
-
-          // Calculate cumulative score and find when they reached current score
-          let cumulativeScore = 0;
-          let reachedCurrentScoreAt = null;
-          
-          for (const sub of teamSubmissions) {
-            cumulativeScore += sub.points || 0;
-            if (cumulativeScore >= team.points) {
-              reachedCurrentScoreAt = sub.submittedAt;
-              break;
-            }
-          }
-          
-          team.tieBreakTime = reachedCurrentScoreAt || team.lastSolveTime || new Date();
-        } else {
-          team.tieBreakTime = new Date();
-        }
-      }
-
-      // Apply tie-breaking sort: score DESC, then tieBreakTime ASC
-      teamsWithPoints.sort((a, b) => {
-        if (b.points !== a.points) {
-          return b.points - a.points; // Higher score first
-        }
-        // Same score - earlier time wins
-        return new Date(a.tieBreakTime) - new Date(b.tieBreakTime);
-      });
-
-      // Only update cache if event is not ended (freeze leaderboard when ended)
-      if (!isEventEnded) {
-        await redisClient.setex(cacheKey, 30, JSON.stringify(teamsWithPoints));
-      }
-
-      res.json({
-        success: true,
-        type: 'teams',
-        data: teamsWithPoints,
-        eventEnded: isEventEnded,
-        eventEndedAt: isEventEnded ? eventState.endedAt : null
-      });
-    } else {
-      // Build query based on user role
-      let userQuery = { role: 'user' };
-
-      // If not admin, only show users with showInScoreboard: true (default) or explicitly true
-      if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
-        userQuery.showInScoreboard = { $ne: false }; // Show users where showInScoreboard is not false
-      }
-
-      let users = await User.find(userQuery)
-        .select('username points solvedChallenges role team showInScoreboard lastSolveTime')
-        .populate('team', 'name')
-        .sort({ points: -1, lastSolveTime: 1, username: 1 })
-        .limit(200) // Get top 200 for tie-breaking calculation
+      const teams = await Team.find({ _id: { $in: rankedIds } })
+        .populate('members', 'username points lastSolveTime')
         .lean();
 
-      // OPTIMIZED: Fetch ALL user submissions in ONE query instead of N queries
-      const userIds = users.map(u => u._id);
-      const allUserSubmissions = await Submission.find({
-        user: { $in: userIds },
-        isCorrect: true
-      }).select('submittedAt points user').sort({ submittedAt: 1 }).lean();
+      // Calculate team points (sum of members) and maintain ZSET order
+      rankedData = rankedIds.map(id => {
+        const team = teams.find(t => t._id.toString() === id);
+        if (!team) return null;
+        const totalPoints = team.members.reduce((sum, m) => sum + (m.points || 0), 0);
+        return {
+          _id: team._id,
+          name: team.name,
+          points: totalPoints,
+          members: team.members
+        };
+      }).filter(t => t !== null);
+    } else {
+      const users = await User.find({ _id: { $in: rankedIds } })
+        .select('username points team lastSolveTime')
+        .populate('team', 'name')
+        .lean();
 
-      // Group submissions by user for fast lookup
-      const submissionsByUser = {};
-      allUserSubmissions.forEach(sub => {
-        if (!submissionsByUser[sub.user.toString()]) {
-          submissionsByUser[sub.user.toString()] = [];
-        }
-        submissionsByUser[sub.user.toString()].push(sub);
-      });
-
-      // Calculate tie-breaking timestamp for each user
-      for (const user of users) {
-        if (user.points > 0) {
-          const submissions = submissionsByUser[user._id.toString()] || [];
-
-          // Calculate cumulative score and find when they reached current score
-          let cumulativeScore = 0;
-          let reachedCurrentScoreAt = null;
-          
-          for (const sub of submissions) {
-            cumulativeScore += sub.points || 0;
-            if (cumulativeScore >= user.points) {
-              reachedCurrentScoreAt = sub.submittedAt;
-              break;
-            }
-          }
-          
-          user.tieBreakTime = reachedCurrentScoreAt || user.lastSolveTime || new Date();
-        } else {
-          user.tieBreakTime = new Date();
-        }
-      }
-
-      // Apply tie-breaking sort: score DESC, then tieBreakTime ASC
-      users.sort((a, b) => {
-        if (b.points !== a.points) {
-          return b.points - a.points; // Higher score first
-        }
-        // Same score - earlier time wins
-        return new Date(a.tieBreakTime) - new Date(b.tieBreakTime);
-      });
-
-      // Limit to top 100
-      users = users.slice(0, 100);
-
-      // Only update cache if event is not ended (freeze leaderboard when ended)
-      if (!isEventEnded) {
-        await redisClient.setex(cacheKey, 30, JSON.stringify(users));
-      }
-
-      res.json({
-        success: true,
-        type: 'users',
-        data: users,
-        eventEnded: isEventEnded,
-        eventEndedAt: isEventEnded ? eventState.endedAt : null
-      });
+      // Maintain ZSET order
+      rankedData = rankedIds.map(id => {
+        const user = users.find(u => u._id.toString() === id);
+        return user;
+      }).filter(u => u !== null);
     }
+
+    res.json({
+      success: true,
+      type: type,
+      data: rankedData,
+      eventEnded: isEventEnded,
+      eventEndedAt: isEventEnded ? eventState.endedAt : null
+    });
     // redis.disconnect(); // Don't disconnect if reusing, but here we created a new instance which is inefficient.
     // Ideally use shared instance. For now, let GC handle or rely on ioredis management.
     // Better: use shared client from earlier refactor if globally available, but this file doesn't have it.
@@ -854,7 +697,7 @@ router.get('/scoreboard/progression', protect, async (req, res) => {
       const allTeams = await Team.find({})
         .select('name')
         .lean();
-      
+
       const teamNames = {};
       const teamIds = new Set();
       allTeams.forEach(team => {
@@ -977,7 +820,7 @@ router.get('/scoreboard/progression', protect, async (req, res) => {
 
         const userId = sub.user._id.toString();
         const timestamp = new Date(sub.submittedAt).getTime();
-        
+
         timePoints.add(timestamp);
 
         if (!userScores[userId]) {
@@ -987,8 +830,8 @@ router.get('/scoreboard/progression', protect, async (req, res) => {
           };
         }
 
-        const currentScore = userScores[userId].scores.length > 0 
-          ? userScores[userId].scores[userScores[userId].scores.length - 1].score 
+        const currentScore = userScores[userId].scores.length > 0
+          ? userScores[userId].scores[userScores[userId].scores.length - 1].score
           : 0;
 
         userScores[userId].scores.push({
@@ -1206,8 +1049,19 @@ router.post('/reset-platform', protect, authorize('admin', 'superadmin'), async 
       { $set: { solvedBy: [] } }
     );
 
-    console.log('Reset complete. Users updated:', userUpdateResult.modifiedCount);
     console.log('Reset complete. Challenges updated:', challengeUpdateResult.modifiedCount);
+
+    // --- NEW: Clear Redis Scoreboard ZSETs on Reset ---
+    try {
+      await redisClient.del('scoreboard:teams:zset');
+      await redisClient.del('scoreboard:users:zset');
+      await redisClient.del('scoreboard:teams'); // Legacy cache
+      await redisClient.del('scoreboard:users'); // Legacy cache
+      console.log('Scoreboard ZSETs cleared');
+    } catch (redisError) {
+      console.error('Error clearing Redis ZSETs on reset:', redisError.message);
+    }
+    // --- END NEW LOGIC ---
 
     res.json({
       success: true,
@@ -1862,16 +1716,16 @@ router.put('/admin/change-password', protect, authorize('admin', 'superadmin'), 
 router.post('/admin/reset-points', protect, authorize('admin', 'superadmin'), async (req, res) => {
   try {
     const Submission = require('../models/Submission');
-    
+
     // Reset all user points to 0 and clear solvedChallenges
     const result = await User.updateMany(
       { role: 'user' },
-      { 
-        $set: { 
-          points: 0, 
+      {
+        $set: {
+          points: 0,
           solvedChallenges: [],
           lastSolveTime: null
-        } 
+        }
       }
     );
 
@@ -1879,8 +1733,8 @@ router.post('/admin/reset-points', protect, authorize('admin', 'superadmin'), as
     const Team = require('../models/Team');
     await Team.updateMany(
       {},
-      { 
-        $set: { 
+      {
+        $set: {
           points: 0,
           solvedChallenges: []
         }
@@ -1904,10 +1758,10 @@ router.post('/admin/reset-points', protect, authorize('admin', 'superadmin'), as
       console.warn('Redis cache clear error:', cacheErr);
     }
 
-    logActivity('POINTS_RESET', { 
-      adminId: req.user._id, 
+    logActivity('POINTS_RESET', {
+      adminId: req.user._id,
       adminUsername: req.user.username,
-      usersAffected: result.modifiedCount 
+      usersAffected: result.modifiedCount
     });
 
     res.json({
@@ -1932,14 +1786,14 @@ router.post('/admin/reset-points', protect, authorize('admin', 'superadmin'), as
 router.post('/admin/reset-challenges', protect, authorize('admin', 'superadmin'), async (req, res) => {
   try {
     const Submission = require('../models/Submission');
-    
+
     // Clear solvedChallenges from all users but keep points and lastSolveTime
     const result = await User.updateMany(
       { role: 'user' },
-      { 
-        $set: { 
+      {
+        $set: {
           solvedChallenges: []
-        } 
+        }
       }
     );
 
@@ -1947,8 +1801,8 @@ router.post('/admin/reset-challenges', protect, authorize('admin', 'superadmin')
     const Team = require('../models/Team');
     await Team.updateMany(
       {},
-      { 
-        $set: { 
+      {
+        $set: {
           solvedChallenges: []
         }
       }
@@ -1971,10 +1825,10 @@ router.post('/admin/reset-challenges', protect, authorize('admin', 'superadmin')
       console.warn('Redis cache clear error:', cacheErr);
     }
 
-    logActivity('CHALLENGES_RESET', { 
-      adminId: req.user._id, 
+    logActivity('CHALLENGES_RESET', {
+      adminId: req.user._id,
       adminUsername: req.user.username,
-      usersAffected: result.modifiedCount 
+      usersAffected: result.modifiedCount
     });
 
     res.json({

@@ -145,12 +145,6 @@ function Scoreboard() {
       )}
       <div className="scoreboard-header">
         <h1>Scoreboard</h1>
-        {lastUpdated && (
-          <p className="last-updated">
-            Last updated: {lastUpdated.toLocaleTimeString()}
-            {(eventEnded || isEventEnded) && ' (Frozen)'}
-          </p>
-        )}
       </div>
 
       <div className="scoreboard-tabs">

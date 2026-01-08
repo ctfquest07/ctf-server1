@@ -154,17 +154,17 @@ router.get('/:id/solves', protect, async (req, res) => {
       challenge: req.params.id,
       isCorrect: true
     })
-    .populate('user', 'username team')
-    .populate({
-      path: 'user',
-      populate: {
-        path: 'team',
-        select: 'name'
-      }
-    })
-    .sort({ submittedAt: 1 })
-    .select('user submittedAt')
-    .lean();
+      .populate('user', 'username team')
+      .populate({
+        path: 'user',
+        populate: {
+          path: 'team',
+          select: 'name'
+        }
+      })
+      .sort({ submittedAt: 1 })
+      .select('user submittedAt')
+      .lean();
 
     // Format the response
     const solves = submissions.map(sub => ({
@@ -189,7 +189,7 @@ router.get('/:id/solves', protect, async (req, res) => {
 // @route   POST /api/challenges/:id/unlock-hint
 // @desc    Unlock a hint for a challenge by spending points
 // @access  Private
-router.post('/:id/unlock-hint', protect, async (req, res) => {
+router.post('/:id/unlock-hint', protect, checkEventNotEnded, async (req, res) => {
   try {
     const { hintIndex } = req.body;
     const userId = req.user._id || req.user.id;
@@ -284,6 +284,29 @@ router.post('/:id/unlock-hint', protect, async (req, res) => {
     user.points = Math.max(0, user.points - hint.cost);
     await user.save();
 
+    // --- NEW: Update Redis ZSET after point deduction ---
+    try {
+      const weight = Math.pow(10, 10);
+      const nowSeconds = user.lastSolveTime ? Math.floor(new Date(user.lastSolveTime).getTime() / 1000) : 0;
+      const zscore = user.points * weight + (weight - nowSeconds);
+
+      await redisClient.zadd('scoreboard:users:zset', zscore, user._id.toString());
+
+      if (user.team) {
+        const teamZsetKey = 'scoreboard:teams:zset';
+        const team = await Team.findById(user.team._id).populate('members', 'points');
+        if (team) {
+          const teamTotalPoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);
+          const teamLastSolve = team.members.reduce((max, m) => (m.lastSolveTime > max ? m.lastSolveTime : max), new Date(0));
+          const teamNowSeconds = teamLastSolve ? Math.floor(new Date(teamLastSolve).getTime() / 1000) : 0;
+          await redisClient.zadd(teamZsetKey, teamTotalPoints * weight + (weight - teamNowSeconds), team._id.toString());
+        }
+      }
+    } catch (redisError) {
+      console.error('[Hint Unlock] Redis ZSET update failed:', redisError.message);
+    }
+    // --- END NEW LOGIC ---
+
     if (team) {
       console.log(`Hint unlocked for user ${user.username}, team ${team.name} points reduced (calculated from members)`);
     } else {
@@ -340,7 +363,7 @@ router.get('/:id', async (req, res) => {
         const token = req.headers.authorization.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await User.findById(decoded.id);
-        
+
         if (user && user.unlockedHints) {
           unlockedHints = user.unlockedHints
             .filter(h => h.challengeId.toString() === req.params.id)
@@ -531,9 +554,9 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
           status: 'incorrect',
           submittedFlag: submittedFlag
         };
-        
+
         console.log('[Real-time] Publishing failed attempt:', failedEvent.user, '->', failedEvent.challenge);
-        
+
         redisClient.publish('ctf:submissions:live', JSON.stringify(failedEvent))
           .then(subs => console.log(`[Real-time] Failed attempt sent to ${subs} subscriber(s)`))
           .catch(err => console.error('[Non-critical] Redis publish error:', err.message));
@@ -572,7 +595,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
         await User.findByIdAndUpdate(
           req.user._id,
           {
-            $addToSet: { 
+            $addToSet: {
               solvedChallenges: challenge._id,
               personallySolvedChallenges: {
                 challengeId: challenge._id,
@@ -596,7 +619,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
         // If user has a team, update team AND all team members
         if (user.team) {
           const Team = require('../models/Team');
-          
+
           // Update the team
           await Team.findByIdAndUpdate(
             user.team._id,
@@ -610,7 +633,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
           // Update ALL team members to mark this challenge as solved
           // This prevents other team members from solving it again
           await User.updateMany(
-            { 
+            {
               team: user.team._id,
               _id: { $ne: req.user._id } // Exclude current user (already updated above)
             },
@@ -621,6 +644,40 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
             { session }
           );
         }
+
+        // --- NEW: CTFd-style Redis ZSET Update ---
+        // Formula: (Score * 10^10) + (10^10 - UnixTimestampSeconds)
+        // Earlier solve time = Higher decimal part = Higher overall score for ties
+        try {
+          const nowSeconds = Math.floor(Date.now() / 1000);
+          const weight = Math.pow(10, 10);
+          const zscore = (user.points + challenge.points) * weight + (weight - nowSeconds);
+
+          // Update User Scoreboard
+          const userZsetKey = 'scoreboard:users:zset';
+          await redisClient.zadd(userZsetKey, zscore, user._id.toString());
+
+          // If user has a team, update Team Scoreboard
+          if (user.team) {
+            const teamZsetKey = 'scoreboard:teams:zset';
+            const Team = require('../models/Team');
+            const team = await Team.findById(user.team._id).populate('members', 'points');
+            if (team) {
+              const teamTotalPoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);
+              // For teams, use the solve time of the current submission (it reached the new total)
+              await redisClient.zadd(teamZsetKey, teamTotalPoints * weight + (weight - nowSeconds), team._id.toString());
+            }
+          }
+
+          // Clear legacy scoreboard caches to force refresh on next read
+          await redisClient.del('scoreboard:teams');
+          await redisClient.del('scoreboard:users');
+
+        } catch (redisError) {
+          console.error('[Scoreboard] Redis ZSET update failed:', redisError.message);
+          // Don't fail the submission if Redis update fails (MongoDB is source of truth)
+        }
+        // --- END NEW LOGIC ---
       });
     } catch (transactionError) {
       // If transaction failed due to event ending, return appropriate error
