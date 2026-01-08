@@ -217,6 +217,7 @@ app.use('/api/teams', teamRoutes);
 app.use('/api/notices', noticeRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/r-submission', realtimeRoutes);
+app.use('/api/timer', require('./routes/timer'));
 
 // Enhanced security headers middleware
 // Enhanced security headers middleware - Relaxed for UX

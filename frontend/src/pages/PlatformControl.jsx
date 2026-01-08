@@ -21,6 +21,12 @@ function PlatformControl() {
   const [totalUsers, setTotalUsers] = useState(0);
   const itemsPerPage = 10;
 
+  // Competition Timer States
+  const [timer, setTimer] = useState(null);
+  const [timerLoading, setTimerLoading] = useState(false);
+  const [durationMinutes, setDurationMinutes] = useState(120);
+  const [remainingTime, setRemainingTime] = useState(null);
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -28,6 +34,49 @@ function PlatformControl() {
       navigate('/');
     }
   }, [isAuthenticated, user, navigate]);
+
+  // Fetch timer status
+  useEffect(() => {
+    const fetchTimer = async () => {
+      try {
+        const res = await axios.get('/api/timer');
+        setTimer(res.data.data);
+      } catch (err) {
+        console.error('Error fetching timer:', err);
+      }
+    };
+    fetchTimer();
+    const interval = setInterval(fetchTimer, 10000); // Update every 10 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  // Calculate remaining time
+  useEffect(() => {
+    if (timer && timer.isActive && timer.endTime) {
+      const calculateRemaining = () => {
+        const now = new Date();
+        const end = new Date(timer.endTime);
+        const diff = end - now;
+        
+        if (diff <= 0) {
+          setRemainingTime('ENDED');
+          return;
+        }
+        
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+        
+        setRemainingTime(`${hours}h ${minutes}m ${seconds}s`);
+      };
+      
+      calculateRemaining();
+      const interval = setInterval(calculateRemaining, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setRemainingTime(null);
+    }
+  }, [timer]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -239,6 +288,72 @@ function PlatformControl() {
     }
   };
 
+  // Timer Control Functions
+  const handleStartTimer = async () => {
+    if (!window.confirm(`Start competition for ${durationMinutes} minutes?`)) return;
+    
+    setTimerLoading(true);
+    try {
+      const res = await axios.post('/api/timer/start', { durationMinutes }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTimer(res.data.data);
+      setSuccessMessage(res.data.message);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to start timer');
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setTimerLoading(false);
+    }
+  };
+
+  const handleStopTimer = async () => {
+    if (!window.confirm('Stop the competition timer?')) return;
+    
+    setTimerLoading(true);
+    try {
+      const res = await axios.post('/api/timer/stop', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTimer(res.data.data);
+      setSuccessMessage(res.data.message);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to stop timer');
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setTimerLoading(false);
+    }
+  };
+
+  const handleExtendTimer = async () => {
+    const minutes = prompt('Enter additional minutes to extend:', '30');
+    if (!minutes) return;
+    
+    const additionalMinutes = parseInt(minutes);
+    if (isNaN(additionalMinutes) || additionalMinutes <= 0) {
+      setError('Invalid minutes');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+    
+    setTimerLoading(true);
+    try {
+      const res = await axios.post('/api/timer/extend', { additionalMinutes }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTimer(res.data.data);
+      setSuccessMessage(res.data.message);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to extend timer');
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setTimerLoading(false);
+    }
+  };
+
   const filteredUsers = users.filter(u => {
     const matchesSearch = (
       u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -286,6 +401,74 @@ function PlatformControl() {
 
       <div className="platform-controls-section">
         <div className="global-controls">
+          {/* Competition Timer Control */}
+          <div className="control-card">
+            <h3>Competition Timer</h3>
+            <p>Control the live competition countdown timer</p>
+            
+            {timer && timer.isActive && remainingTime && (
+              <div className="timer-display">
+                <div className="timer-status active">
+                  <span className="status-indicator">● LIVE</span>
+                  <span className="remaining-time">{remainingTime}</span>
+                </div>
+                <div className="timer-info">
+                  <p>Started: {new Date(timer.startTime).toLocaleString()}</p>
+                  <p>Ends: {new Date(timer.endTime).toLocaleString()}</p>
+                </div>
+              </div>
+            )}
+            
+            {timer && !timer.isActive && (
+              <div className="timer-display">
+                <div className="timer-status inactive">
+                  <span className="status-indicator">○ INACTIVE</span>
+                </div>
+              </div>
+            )}
+            
+            <div className="timer-controls">
+              {!timer || !timer.isActive ? (
+                <>
+                  <div className="duration-input">
+                    <label>Duration (minutes):</label>
+                    <input
+                      type="number"
+                      value={durationMinutes}
+                      onChange={(e) => setDurationMinutes(parseInt(e.target.value) || 120)}
+                      min="1"
+                      max="1440"
+                    />
+                  </div>
+                  <button
+                    className="btn-start"
+                    onClick={handleStartTimer}
+                    disabled={timerLoading}
+                  >
+                    {timerLoading ? 'Starting...' : 'Start Competition'}
+                  </button>
+                </>
+              ) : (
+                <div className="active-timer-controls">
+                  <button
+                    className="btn-extend"
+                    onClick={handleExtendTimer}
+                    disabled={timerLoading}
+                  >
+                    {timerLoading ? 'Extending...' : 'Extend Time'}
+                  </button>
+                  <button
+                    className="btn-stop"
+                    onClick={handleStopTimer}
+                    disabled={timerLoading}
+                  >
+                    {timerLoading ? 'Stopping...' : 'Stop Competition'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="control-card">
             <h3>Global Submission Control</h3>
             <p>Block all users from submitting flags across all challenges</p>
