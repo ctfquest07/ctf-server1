@@ -29,6 +29,11 @@ function TeamDetails() {
 
         const res = await axios.get(`/api/teams/${id}`, config);
         setTeam(res.data.data);
+        console.log('Team data loaded:', res.data.data);
+        console.log('Team members unlockedHints:', res.data.data.members.map(m => ({ 
+          username: m.username, 
+          unlockedHints: m.unlockedHints 
+        })));
         setLoading(false);
       } catch (err) {
         console.error('Error fetching team details:', err);
