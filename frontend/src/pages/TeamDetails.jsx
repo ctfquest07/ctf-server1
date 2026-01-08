@@ -30,9 +30,9 @@ function TeamDetails() {
         const res = await axios.get(`/api/teams/${id}`, config);
         setTeam(res.data.data);
         console.log('Team data loaded:', res.data.data);
-        console.log('Team members unlockedHints:', res.data.data.members.map(m => ({ 
-          username: m.username, 
-          unlockedHints: m.unlockedHints 
+        console.log('Team members unlockedHints:', res.data.data.members.map(m => ({
+          username: m.username,
+          unlockedHints: m.unlockedHints
         })));
         setLoading(false);
       } catch (err) {
@@ -77,7 +77,7 @@ function TeamDetails() {
 
   // Sort members by points (highest first)
   const sortedMembers = [...team.members].sort((a, b) => (b.points || 0) - (a.points || 0));
-  
+
   // Captain is either from the database (already populated) or defaults to highest scorer
   let captain = null;
   if (team.captain) {
@@ -115,19 +115,21 @@ function TeamDetails() {
         </div>
         <div className="stat-card challenges-card">
           <div className="stat-label">Challenges Solved</div>
-          <div className="stat-value">{team.solvedChallenges?.length || 0}</div>
+          <div className="stat-value">
+            {team.members.reduce((sum, member) => sum + (member.personallySolvedChallenges?.length || 0), 0)}
+          </div>
         </div>
       </div>
 
       <div className="team-members-section">
         <h2>Team Members</h2>
-        
+
         {captain && (
           <div className="member-card captain">
             <div className="member-badge">CAPTAIN</div>
             <div className="member-info">
-              <div 
-                className="member-name clickable" 
+              <div
+                className="member-name clickable"
                 onClick={() => navigate(`/user/${captain._id}`)}
                 style={{ cursor: 'pointer' }}
               >
@@ -148,8 +150,8 @@ function TeamDetails() {
             <div key={member._id} className="member-card">
               <div className="member-rank">#{sortedMembers.findIndex(sm => sm._id === member._id) + 1}</div>
               <div className="member-info">
-                <div 
-                  className="member-name clickable" 
+                <div
+                  className="member-name clickable"
                   onClick={() => navigate(`/user/${member._id}`)}
                   style={{ cursor: 'pointer' }}
                 >

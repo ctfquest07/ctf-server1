@@ -37,12 +37,12 @@
 .back-button {
   padding: 0.5rem 0;
   background: transparent;
-  color: #00ffaa;
+  color: #00aaff;
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -52,7 +52,8 @@
 
 .back-button:hover {
   transform: translateX(-5px);
-  text-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
+  color: #33bbff;
+  text-shadow: 0 0 10px rgba(0, 170, 255, 0.3);
 }
 
 .challenges-main {
@@ -131,13 +132,12 @@
 }
 
 .description h3 {
-  color: #00ffaa;
-  margin-bottom: 1.5rem;
-  font-size: 1.4rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  border-left: 4px solid #00ffaa;
+  color: #ffffff;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-left: 3px solid #0d7c57;
   padding-left: 15px;
 }
 
@@ -158,13 +158,12 @@
 }
 
 .hints h3 {
-  color: #00ffaa;
-  margin: 3rem 0 1.5rem 0;
-  font-size: 1.4rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  border-left: 4px solid #00ffaa;
+  color: #ffffff;
+  margin: 2.5rem 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-left: 3px solid #00ffaa;
   padding-left: 15px;
 }
 
@@ -201,23 +200,24 @@
 }
 
 .unlock-hint-button {
-  background: #00aaff;
-  color: #000000;
-  border: none;
+  background: rgba(0, 170, 255, 0.1);
+  color: #00aaff;
+  border: 1px solid rgba(0, 170, 255, 0.5);
   padding: 0.8rem 1.5rem;
   border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
-  box-shadow: 0 4px 15px rgba(0, 170, 255, 0.3);
+  box-shadow: none;
 }
 
 .unlock-hint-button:hover:not(:disabled) {
-  background: #33bbff;
+  background: #00aaff;
+  color: #000000;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 170, 255, 0.4);
+  box-shadow: 0 5px 15px rgba(0, 170, 255, 0.2);
 }
 
 .unlock-hint-button:disabled {
@@ -254,24 +254,24 @@
 
 .solve-challenge-button {
   width: 100%;
-  padding: 1.2rem;
-  background: #00ffaa;
-  color: #000000;
-  border: none;
-  border-radius: 12px;
-  font-size: 1.2rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 2px;
+  padding: 1rem;
+  background: rgba(0, 255, 170, 0.1);
+  color: #00ffaa;
+  border: 1px solid rgba(0, 255, 170, 0.5);
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 1px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 0 10px 30px rgba(0, 255, 170, 0.3);
+  transition: all 0.2s ease;
+  box-shadow: none;
 }
 
 .solve-challenge-button:hover:not(:disabled) {
-  background: #33ffbb;
-  transform: translateY(-4px);
-  box-shadow: 0 15px 40px rgba(0, 255, 170, 0.5);
+  background: #00ffaa;
+  color: #000000;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 255, 170, 0.2);
 }
 
 .solve-challenge-button:disabled {
@@ -367,9 +367,9 @@
 .submit-flag-button {
   width: 100%;
   padding: 0.8rem;
-  background: #00ffaa;
-  color: #000000;
-  border: none;
+  background: rgba(0, 255, 170, 0.1);
+  color: #00ffaa;
+  border: 1px solid rgba(0, 255, 170, 0.5);
   border-radius: 6px;
   font-size: 1rem;
   font-weight: 500;
@@ -378,7 +378,8 @@
 }
 
 .submit-flag-button:hover:not(:disabled) {
-  background: #00cc88;
+  background: #00ffaa;
+  color: #000000;
 }
 
 .submit-flag-button:disabled {
