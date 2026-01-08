@@ -203,6 +203,15 @@
   letter-spacing: -0.3px;
 }
 
+.member-name.clickable {
+  transition: color 0.3s ease, text-decoration 0.3s ease;
+}
+
+.member-name.clickable:hover {
+  color: #00ffaa;
+  text-decoration: underline;
+}
+
 .member-email {
   color: #6a6a6a;
   font-size: 0.82rem;

@@ -121,7 +121,13 @@ function TeamDetails() {
           <div className="member-card captain">
             <div className="member-badge">CAPTAIN</div>
             <div className="member-info">
-              <div className="member-name">{captain.username}</div>
+              <div 
+                className="member-name clickable" 
+                onClick={() => navigate(`/user/${captain._id}`)}
+                style={{ cursor: 'pointer' }}
+              >
+                {captain.username}
+              </div>
               <div className="member-email">{captain.email}</div>
             </div>
             <div className="member-stats">
@@ -136,7 +142,13 @@ function TeamDetails() {
             <div key={member._id} className="member-card">
               <div className="member-rank">#{sortedMembers.findIndex(sm => sm._id === member._id) + 1}</div>
               <div className="member-info">
-                <div className="member-name">{member.username}</div>
+                <div 
+                  className="member-name clickable" 
+                  onClick={() => navigate(`/user/${member._id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {member.username}
+                </div>
                 <div className="member-email">{member.email}</div>
               </div>
               <div className="member-stats">
