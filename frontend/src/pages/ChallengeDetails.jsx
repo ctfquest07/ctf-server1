@@ -142,15 +142,32 @@ function ChallengeDetails() {
 
     const hint = challenge.hints[hintIndex];
     const userPoints = user.points || 0;
-    const teamPoints = user.team?.points || 0;
+    const hasTeam = user.team && user.team._id;
     
-    // Check if user has enough personal points
-    if (userPoints < hint.cost) {
-      alert(`Insufficient points! You need ${hint.cost} points but you have ${userPoints} points.\n\nNote: Hints are unlocked using YOUR personal points, not team points.`);
+    // If user has a team, fetch the latest team points
+    let teamPoints = 0;
+    if (hasTeam) {
+      try {
+        const teamRes = await axios.get(`/api/teams/my/team`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        teamPoints = teamRes.data.data.points || 0;
+      } catch (err) {
+        console.error('Error fetching team points:', err);
+      }
+    }
+    
+    // Use team points if in a team, otherwise use individual points
+    const availablePoints = hasTeam ? teamPoints : userPoints;
+    const pointsType = hasTeam ? 'team' : 'individual';
+    
+    // Check if enough points available
+    if (availablePoints < hint.cost) {
+      alert(`Insufficient points! You need ${hint.cost} points but have ${availablePoints} ${pointsType} points.`);
       return;
     }
     
-    const confirmMessage = `Are you sure you want to unlock this hint for ${hint.cost} points?\n\nYour points: ${userPoints} → ${userPoints - hint.cost}\nTeam points: ${teamPoints} → ${teamPoints - hint.cost}`;
+    const confirmMessage = `Are you sure you want to unlock this hint for ${hint.cost} points?\n\nTeam points: ${teamPoints}\nAfter unlock: ${teamPoints - hint.cost} points`;
     
     if (!window.confirm(confirmMessage)) {
       return;
