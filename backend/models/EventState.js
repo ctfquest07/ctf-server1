@@ -43,13 +43,12 @@ EventStateSchema.statics.getEventState = async function() {
   const FIXED_ID = '000000000000000000000001'; // Fixed ObjectId for singleton
   
   // Use findByIdAndUpdate with upsert for atomic operation (prevents race conditions)
+  // Note: Don't set updatedAt/createdAt here - timestamps: true handles it automatically
   const eventState = await this.findByIdAndUpdate(
     FIXED_ID,
     {
       $setOnInsert: {
-        status: 'not_started',
-        createdAt: new Date(),
-        updatedAt: new Date()
+        status: 'not_started'
       }
     },
     {
