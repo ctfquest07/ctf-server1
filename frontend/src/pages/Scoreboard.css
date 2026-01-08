@@ -1,5 +1,5 @@
 .scoreboard-container {
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
   color: #e0e0e0;
@@ -7,30 +7,15 @@
 
 .scoreboard-header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 2.5rem;
 }
 
 .scoreboard-header h1 {
-  font-size: 3rem;
+  font-size: 2.5rem;
   margin-bottom: 0.5rem;
-  background: linear-gradient(90deg, #ffffff, #00ffaa);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  display: inline-block;
-}
-
-.scoreboard-subtitle {
-  color: #a0a0a0;
-  font-size: 1.2rem;
-}
-
-.last-updated {
-  color: #00ffaa;
-  font-size: 0.9rem;
-  margin-top: 1rem;
-  font-style: italic;
-  opacity: 0.8;
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .scoreboard-tabs {
@@ -41,39 +26,37 @@
 }
 
 .tab-button {
-  padding: 0.75rem 2rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(0, 255, 170, 0.3);
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 1rem;
-  font-weight: 600;
+  padding: 0.6rem 2rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
 .tab-button:hover {
-  background: rgba(0, 255, 170, 0.1);
-  border-color: rgba(0, 255, 170, 0.5);
-  color: #00ffaa;
-  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #ffffff;
 }
 
 .tab-button.active {
-  background: linear-gradient(135deg, #00ffaa, #00cc88);
-  border-color: #00ffaa;
+  background: #00aaff;
+  border-color: #00aaff;
   color: #000000;
-  box-shadow: 0 4px 20px rgba(0, 255, 170, 0.4);
+  font-weight: 600;
 }
 
 .scoreboard-table-container {
-  background: linear-gradient(135deg, rgba(26, 46, 70, 0.6), rgba(15, 25, 35, 0.8));
-  border-radius: 12px;
-  border: 1px solid rgba(0, 255, 170, 0.3);
+  background: #0a0e17;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 255, 170, 0.15);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 .scoreboard-table {
@@ -83,23 +66,22 @@
 
 .scoreboard-table th,
 .scoreboard-table td {
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1.5rem;
   text-align: left;
-  border-bottom: 1px solid rgba(0, 255, 170, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .scoreboard-table th {
-  background: linear-gradient(135deg, rgba(0, 255, 170, 0.15), rgba(0, 200, 150, 0.1));
-  color: #00ffaa;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.7);
   font-weight: 600;
   text-transform: uppercase;
-  font-size: 0.85rem;
-  letter-spacing: 1.5px;
-  text-shadow: 0 0 10px rgba(0, 255, 170, 0.3);
+  font-size: 0.8rem;
+  letter-spacing: 1px;
 }
 
 .scoreboard-table tbody tr {
-  transition: all 0.3s ease;
+  transition: background-color 0.2s ease;
 }
 
 .scoreboard-table tr:last-child td {
@@ -107,147 +89,103 @@
 }
 
 .scoreboard-table tbody tr:hover {
-  background-color: rgba(0, 255, 170, 0.08);
-  transform: translateX(5px);
+  background-color: rgba(255, 255, 255, 0.02);
 }
 
-.username-link {
-  background: none;
-  border: none;
-  color: #00ffaa;
-  cursor: pointer;
-  font-size: inherit;
-  font-weight: 600;
-  text-decoration: none !important;
-  transition: all 0.3s ease;
-  padding: 0;
-}
-
-.username-link:hover {
-  color: #ffffff;
-  text-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
-  transform: scale(1.05);
-}
-
-.team-name {
-  font-weight: 600;
-  color: #ffffff;
-  font-size: 1.05rem;
-}
-
+.username-link,
 .team-name-link {
   background: none;
   border: none;
   color: #ffffff;
   cursor: pointer;
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 500;
   text-decoration: none;
-  transition: all 0.3s ease;
   padding: 0;
+  transition: color 0.2s ease;
   text-align: left;
 }
 
+.username-link:hover,
 .team-name-link:hover {
-  color: #00ffaa;
-  text-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
-  transform: scale(1.02);
+  color: #00aaff;
+  text-decoration: underline;
 }
 
 .points-value {
-  font-weight: 700;
-  color: #00ffaa;
-  font-size: 1.15rem;
-  text-shadow: 0 0 8px rgba(0, 255, 170, 0.4);
+  font-weight: 600;
+  color: #00aaff;
+  font-size: 1.1rem;
 }
 
 .rank-column {
-  width: 100px;
+  width: 80px;
   text-align: center;
 }
 
 .rank-number {
   display: inline-block;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #888;
 }
 
 .name-column {
   width: 60%;
-  font-weight: 600;
 }
 
 .points-column {
   width: 25%;
   text-align: right;
-  font-weight: 600;
-  color: #00ffaa;
+  color: #00aaff;
 }
 
 .challenges-column {
   text-align: center;
 }
 
+/* Rank Badges - Simple Solid Circles */
 .rank-badge {
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   font-weight: 700;
-  font-size: 1.2rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  font-size: 0.9rem;
+  color: #000;
 }
 
 .rank-1 {
-  background: linear-gradient(135deg, #FFD700, #FFA500);
-  color: #000;
-  border: 2px solid #FFD700;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  background-color: #FFD700;
+  /* Gold */
 }
 
 .rank-2 {
-  background: linear-gradient(135deg, #E8E8E8, #C0C0C0);
-  color: #000;
-  border: 2px solid #C0C0C0;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  background-color: #C0C0C0;
+  /* Silver */
 }
 
 .rank-3 {
-  background: linear-gradient(135deg, #CD7F32, #8B4513);
+  background-color: #CD7F32;
+  /* Bronze */
   color: #fff;
-  border: 2px solid #CD7F32;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.top-1 {
-  background: linear-gradient(90deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.05));
-  border-left: 3px solid #FFD700;
-}
-
-.top-2 {
-  background: linear-gradient(90deg, rgba(192, 192, 192, 0.15), rgba(192, 192, 192, 0.05));
-  border-left: 3px solid #C0C0C0;
-}
-
+/* Remove side borders and glows for top ranks */
+.top-1,
+.top-2,
 .top-3 {
-  background: linear-gradient(90deg, rgba(205, 127, 50, 0.15), rgba(205, 127, 50, 0.05));
-  border-left: 3px solid #CD7F32;
+  border: none;
+  background: none;
 }
 
-.loading, .error {
+.loading,
+.error {
   text-align: center;
   padding: 3rem;
-  color: #a0a0a0;
-  font-style: italic;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .error {
@@ -255,15 +193,16 @@
 }
 
 @media (max-width: 768px) {
+
   .scoreboard-table th,
   .scoreboard-table td {
-    padding: 0.75rem 0.5rem;
+    padding: 0.75rem 1rem;
   }
-  
+
   .scoreboard-header h1 {
-    font-size: 2.5rem;
+    font-size: 2rem;
   }
-  
+
   .challenges-column {
     display: none;
   }

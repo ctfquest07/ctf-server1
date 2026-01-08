@@ -54,7 +54,7 @@
 }
 
 .back-button:hover {
-  transform: translateX(-5px);
+  transform: translate(-5px, -50%);
   color: #33bbff;
   text-shadow: 0 0 10px rgba(0, 170, 255, 0.3);
 }
