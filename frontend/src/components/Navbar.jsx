@@ -195,14 +195,16 @@ function Navbar() {
                 </div>
               </li>
             )}
-            <li>
-              <Link to="/notices" className={`nav-link ${isActiveLink('/notices') ? 'active' : ''}`}>
-                Notices
-                {isAuthenticated && unreadNoticeCount > 0 && (
-                  <span className="notification-badge">{unreadNoticeCount}</span>
-                )}
-              </Link>
-            </li>
+            {isAuthenticated && (
+              <li>
+                <Link to="/notices" className={`nav-link ${isActiveLink('/notices') ? 'active' : ''}`}>
+                  Notices
+                  {unreadNoticeCount > 0 && (
+                    <span className="notification-badge">{unreadNoticeCount}</span>
+                  )}
+                </Link>
+              </li>
+            )}
             <li><Link to="/documentation" className={`nav-link ${isActiveLink('/documentation') ? 'active' : ''}`}>Docs</Link></li>
             <li><Link to="/contact" className={`nav-link ${isActiveLink('/contact') ? 'active' : ''}`}>Contact</Link></li>
           </ul>
