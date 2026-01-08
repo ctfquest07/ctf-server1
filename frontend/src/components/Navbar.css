@@ -236,15 +236,19 @@
 }
 
 /* Notification Badge */
+.nav-link {
+  position: relative;
+}
+
 .notification-badge {
   position: absolute;
-  top: -2px;
-  right: -8px;
+  top: -4px;
+  right: -4px;
   background: linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%);
   color: white;
   border-radius: 10px;
   padding: 2px 6px;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 700;
   min-width: 18px;
   height: 18px;
@@ -252,11 +256,12 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
-  animation: pulse 2s ease-in-out infinite;
+  animation: pulse-badge 2s ease-in-out infinite;
   border: 2px solid var(--dark-bg);
+  z-index: 10;
 }
 
-@keyframes pulse {
+@keyframes pulse-badge {
   0%, 100% {
     transform: scale(1);
     box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);

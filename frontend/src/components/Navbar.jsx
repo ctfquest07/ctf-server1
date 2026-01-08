@@ -15,7 +15,7 @@ function Navbar() {
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
   const audioRef = useRef(null);
-  const previousCountRef = useRef(0);
+  const previousCountRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,7 +32,19 @@ function Navbar() {
       fetchUnreadCount();
       // Poll every 30 seconds for new notices
       const interval = setInterval(fetchUnreadCount, 30000);
-      return () => clearInterval(interval);
+      
+      // Refresh when tab becomes visible
+      const handleVisibilityChange = () => {
+        if (!document.hidden && isAuthenticated) {
+          fetchUnreadCount();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     }
   }, [isAuthenticated]);
 
@@ -41,8 +53,8 @@ function Navbar() {
       const response = await axios.get('/api/notices/unread-count');
       const newCount = response.data.count;
       
-      // Play notification sound if count increased
-      if (newCount > previousCountRef.current && previousCountRef.current > 0) {
+      // Play notification sound if count increased (but not on first load)
+      if (previousCountRef.current !== null && newCount > previousCountRef.current) {
         playNotificationSound();
       }
       
@@ -50,6 +62,7 @@ function Navbar() {
       setUnreadNoticeCount(newCount);
     } catch (err) {
       console.error('Error fetching unread notice count:', err);
+      console.error('Error details:', err.response?.data || err.message);
     }
   };
 
@@ -68,7 +81,11 @@ function Navbar() {
   useEffect(() => {
     setIsMenuOpen(false);
     setIsDropdownOpen(false);
-  }, [location]);
+    // Refresh unread count when navigating
+    if (isAuthenticated) {
+      fetchUnreadCount();
+    }
+  }, [location, isAuthenticated]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
