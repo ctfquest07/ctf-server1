@@ -154,6 +154,15 @@
   font-size: 0.9rem;
 }
 
+.solved-count.clickable {
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.solved-count.clickable:hover {
+  color: #00ffaa;
+}
+
 .solve-button {
   padding: 0.7rem 1.2rem;
   background: transparent;
@@ -562,4 +571,57 @@
     margin-left: 0;
     text-align: center;
   }
+}
+
+/* Solves Modal Styles */
+.solves-modal {
+  max-width: 700px;
+}
+
+.solves-list {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.solves-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.solves-table th,
+.solves-table td {
+  padding: 0.8rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.solves-table th {
+  background: rgba(0, 255, 170, 0.1);
+  color: #00ffaa;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.solves-table tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.solves-table td:first-child {
+  color: #00ffaa;
+  font-weight: 600;
+}
+
+.no-solves {
+  text-align: center;
+  padding: 2rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.modal-loading {
+  text-align: center;
+  padding: 2rem;
+  color: rgba(255, 255, 255, 0.7);
 }

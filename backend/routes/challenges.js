@@ -134,6 +134,57 @@ router.get('/', sanitizeInput, async (req, res) => {
   }
 });
 
+// @route   GET /api/challenges/:id/solves
+// @desc    Get users/teams who solved a challenge with timestamps
+// @access  Private
+router.get('/:id/solves', protect, async (req, res) => {
+  try {
+    const challenge = await Challenge.findById(req.params.id);
+
+    if (!challenge) {
+      return res.status(404).json({
+        success: false,
+        message: 'Challenge not found'
+      });
+    }
+
+    // Get submissions for this challenge
+    const submissions = await Submission.find({
+      challenge: req.params.id,
+      isCorrect: true
+    })
+    .populate('user', 'username team')
+    .populate({
+      path: 'user',
+      populate: {
+        path: 'team',
+        select: 'name'
+      }
+    })
+    .sort({ submittedAt: 1 })
+    .select('user submittedAt')
+    .lean();
+
+    // Format the response
+    const solves = submissions.map(sub => ({
+      username: sub.user?.username || 'Unknown',
+      team: sub.user?.team?.name || 'No Team',
+      solvedAt: sub.submittedAt
+    }));
+
+    res.json({
+      success: true,
+      data: solves
+    });
+  } catch (error) {
+    console.error('Error fetching solves:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 // @route   GET /api/challenges/:id
 // @desc    Get single challenge
 // @access  Public

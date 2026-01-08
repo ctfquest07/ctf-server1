@@ -83,7 +83,7 @@
   cursor: pointer;
   font-size: inherit;
   font-weight: 600;
-  text-decoration: none;
+  text-decoration: none !important;
   transition: all 0.3s ease;
   padding: 0;
 }

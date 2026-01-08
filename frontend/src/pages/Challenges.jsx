@@ -5,6 +5,72 @@ import AuthContext from '../context/AuthContext'
 import Logger from '../utils/logger'
 import './Challenges.css'
 
+const SolvesModal = ({ challenge, onClose }) => {
+  const [solves, setSolves] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { token } = useContext(AuthContext);
+
+  useEffect(() => {
+    const fetchSolves = async () => {
+      try {
+        const config = {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        };
+        const res = await axios.get(`/api/challenges/${challenge._id}/solves`, config);
+        setSolves(res.data.data || []);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching solves:', err);
+        setLoading(false);
+      }
+    };
+
+    fetchSolves();
+  }, [challenge._id, token]);
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content solves-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>{challenge.title} - Solves ({solves.length})</h3>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+
+        {loading ? (
+          <div className="modal-loading">Loading solves...</div>
+        ) : solves.length === 0 ? (
+          <div className="no-solves">No one has solved this challenge yet!</div>
+        ) : (
+          <div className="solves-list">
+            <table className="solves-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>User</th>
+                  <th>Team</th>
+                  <th>Solved At</th>
+                </tr>
+              </thead>
+              <tbody>
+                {solves.map((solve, index) => (
+                  <tr key={index}>
+                    <td>{index + 1}</td>
+                    <td>{solve.username}</td>
+                    <td>{solve.team}</td>
+                    <td>{new Date(solve.solvedAt).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
   const [flag, setFlag] = useState('');
   const [error, setError] = useState('');
@@ -76,6 +142,8 @@ function Challenges() {
   const [challenges, setChallenges] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [showSolvesModal, setShowSolvesModal] = useState(false)
+  const [selectedChallengeForSolves, setSelectedChallengeForSolves] = useState(null)
 
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -242,7 +310,16 @@ function Challenges() {
                     {isSolved && <span className="solved-badge">✓</span>}
                   </h3>
                   <div className="challenge-footer">
-                    <span className="solved-count">{challenge.solvedBy?.length || 0} solves</span>
+                    <span 
+                      className="solved-count clickable" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedChallengeForSolves(challenge);
+                        setShowSolvesModal(true);
+                      }}
+                    >
+                      {challenge.solvedBy?.length || 0} solves
+                    </span>
                     <button
                       className={`solve-button ${isSolved ? 'solved' : ''}`}
                       onClick={(e) => {
@@ -309,6 +386,15 @@ function Challenges() {
         )}
       </div>
 
+      {showSolvesModal && selectedChallengeForSolves && (
+        <SolvesModal
+          challenge={selectedChallengeForSolves}
+          onClose={() => {
+            setShowSolvesModal(false);
+            setSelectedChallengeForSolves(null);
+          }}
+        />
+      )}
 
     </div>
   )
