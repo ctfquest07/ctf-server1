@@ -172,7 +172,6 @@ function Navbar() {
         <div className={`navbar-content ${isMenuOpen ? 'active' : ''}`} ref={menuRef}>
           <ul className="navbar-links">
             <li><Link to="/" className={`nav-link ${isActiveLink('/') ? 'active' : ''}`}>Home</Link></li>
-            <li><Link to="/teams" className={`nav-link ${isActiveLink('/teams') ? 'active' : ''}`}>Teams</Link></li>
             {isAuthenticated && (
               <li><Link to="/challenges" className={`nav-link ${isActiveLink('/challenges') ? 'active' : ''}`}>Challenges</Link></li>
             )}

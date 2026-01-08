@@ -59,7 +59,6 @@ const AdminSubmissions = lazy(() => import('./pages/AdminSubmissions'))
 const UserProfile = lazy(() => import('./pages/UserProfile'))
 const AdminLiveMonitor = lazy(() => import('./pages/AdminLiveMonitor'))
 const MyTeam = lazy(() => import('./pages/MyTeam'))
-const Teams = lazy(() => import('./pages/Teams'))
 
 function App() {
   useEffect(() => {
@@ -117,7 +116,6 @@ function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/contact" element={<ContactUs />} />
                 <Route path="/notices" element={<Notice />} />
-                <Route path="/teams" element={<Teams />} />
                 <Route path="/profile" element={
                   <ProtectedRoute>
                     <Profile />
