@@ -57,6 +57,9 @@ function Navbar() {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
         window.removeEventListener('noticeRead', handleNoticeRead);
       };
+    } else {
+      // Reset count when not authenticated
+      setUnreadNoticeCount(0);
     }
   }, [isAuthenticated, user]);
 
