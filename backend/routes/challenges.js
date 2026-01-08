@@ -185,6 +185,106 @@ router.get('/:id/solves', protect, async (req, res) => {
   }
 });
 
+// @route   POST /api/challenges/:id/unlock-hint
+// @desc    Unlock a hint for a challenge by spending points
+// @access  Private
+router.post('/:id/unlock-hint', protect, async (req, res) => {
+  try {
+    const { hintIndex } = req.body;
+    const userId = req.user.id;
+
+    // Validate hint index
+    if (hintIndex === undefined || hintIndex < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid hint index'
+      });
+    }
+
+    // Get challenge
+    const challenge = await Challenge.findById(req.params.id);
+    if (!challenge) {
+      return res.status(404).json({
+        success: false,
+        message: 'Challenge not found'
+      });
+    }
+
+    // Check if hint exists
+    if (!challenge.hints || !challenge.hints[hintIndex]) {
+      return res.status(404).json({
+        success: false,
+        message: 'Hint not found'
+      });
+    }
+
+    const hint = challenge.hints[hintIndex];
+
+    // Get user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check if hint is already unlocked
+    const alreadyUnlocked = user.unlockedHints.some(
+      h => h.challengeId.toString() === req.params.id && h.hintIndex === hintIndex
+    );
+
+    if (alreadyUnlocked) {
+      return res.status(400).json({
+        success: false,
+        message: 'Hint already unlocked'
+      });
+    }
+
+    // Check if user has enough points
+    if (user.points < hint.cost) {
+      return res.status(400).json({
+        success: false,
+        message: `Insufficient points. You need ${hint.cost} points but have ${user.points}`
+      });
+    }
+
+    // Deduct points and unlock hint
+    user.points -= hint.cost;
+    user.unlockedHints.push({
+      challengeId: req.params.id,
+      hintIndex: hintIndex
+    });
+
+    await user.save();
+
+    logActivity('HINT_UNLOCKED', {
+      userId,
+      username: user.username,
+      challengeId: req.params.id,
+      challengeTitle: challenge.title,
+      hintIndex,
+      cost: hint.cost,
+      remainingPoints: user.points
+    });
+
+    res.json({
+      success: true,
+      message: 'Hint unlocked successfully',
+      data: {
+        hint: hint.content,
+        remainingPoints: user.points
+      }
+    });
+  } catch (error) {
+    console.error('Error unlocking hint:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 // @route   GET /api/challenges/:id
 // @desc    Get single challenge
 // @access  Public
@@ -199,9 +299,28 @@ router.get('/:id', async (req, res) => {
       });
     }
 
+    // If user is authenticated, include their unlocked hints info
+    let unlockedHints = [];
+    if (req.headers.authorization) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id);
+        
+        if (user && user.unlockedHints) {
+          unlockedHints = user.unlockedHints
+            .filter(h => h.challengeId.toString() === req.params.id)
+            .map(h => h.hintIndex);
+        }
+      } catch (err) {
+        // Token invalid or user not found, continue without unlocked hints
+      }
+    }
+
     res.json({
       success: true,
-      data: challenge
+      data: challenge,
+      unlockedHints
     });
   } catch (error) {
     res.status(500).json({

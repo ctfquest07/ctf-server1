@@ -46,6 +46,17 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Challenge'
   }],
+  unlockedHints: [{
+    challengeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Challenge'
+    },
+    hintIndex: Number,
+    unlockedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   loginAttempts: {
     type: Number,
     default: 0

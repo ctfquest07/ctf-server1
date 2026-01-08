@@ -77,6 +77,8 @@ function ChallengeDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [unlockedHints, setUnlockedHints] = useState([]);
+  const [unlockingHint, setUnlockingHint] = useState(null);
   const { user, isAuthenticated, token, updateUserData } = useContext(AuthContext);
 
   useEffect(() => {
@@ -89,6 +91,7 @@ function ChallengeDetails() {
 
         const res = await axios.get(`/api/challenges/${id}`, config);
         setChallenge(res.data.data);
+        setUnlockedHints(res.data.unlockedHints || []);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching challenge:', err);
@@ -128,6 +131,34 @@ function ChallengeDetails() {
       return res.data;
     } catch (err) {
       throw new Error(err.response?.data?.message || 'Failed to submit flag');
+    }
+  };
+
+  const unlockHint = async (hintIndex) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setUnlockingHint(hintIndex);
+      const res = await axios.post(
+        `/api/challenges/${challenge._id}/unlock-hint`,
+        { hintIndex },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Update unlocked hints
+      setUnlockedHints([...unlockedHints, hintIndex]);
+      
+      // Update user data to reflect new points
+      await updateUserData();
+
+      alert(res.data.message);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to unlock hint');
+    } finally {
+      setUnlockingHint(null);
     }
   };
 
@@ -182,14 +213,38 @@ function ChallengeDetails() {
         {challenge.hints && challenge.hints.length > 0 && (
           <div className="hints">
             <h3>Hints</h3>
-            {challenge.hints.map((hint, index) => (
-              <div key={index} className="hint-item">
-                <p>{hint.content}</p>
-                {hint.cost > 0 && (
-                  <span className="hint-cost">Cost: {hint.cost} points</span>
-                )}
-              </div>
-            ))}
+            {challenge.hints.map((hint, index) => {
+              const isUnlocked = unlockedHints.includes(index);
+              const isFree = hint.cost === 0;
+              const showContent = isFree || isUnlocked;
+
+              return (
+                <div key={index} className={`hint-item ${showContent ? 'unlocked' : 'locked'}`}>
+                  {showContent ? (
+                    <>
+                      <p>{hint.content}</p>
+                      {hint.cost > 0 && (
+                        <span className="hint-cost unlocked-badge">Unlocked</span>
+                      )}
+                    </>
+                  ) : (
+                    <div className="locked-hint">
+                      <p className="locked-message">🔒 This hint is locked</p>
+                      <button
+                        className="unlock-hint-button"
+                        onClick={() => unlockHint(index)}
+                        disabled={!isAuthenticated || unlockingHint === index}
+                      >
+                        {unlockingHint === index ? 'Unlocking...' : `Unlock for ${hint.cost} points`}
+                      </button>
+                      {!isAuthenticated && (
+                        <p className="login-hint">Login to unlock hints</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 

@@ -157,6 +157,17 @@
   border-radius: 8px;
   padding: 1.5rem;
   margin-bottom: 1rem;
+  transition: all 0.3s ease;
+}
+
+.hint-item.locked {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 170, 0, 0.3);
+}
+
+.hint-item.unlocked {
+  background: rgba(0, 255, 170, 0.05);
+  border: 1px solid rgba(0, 255, 170, 0.2);
 }
 
 .hint-item p {
@@ -171,10 +182,60 @@
   word-wrap: break-word;
 }
 
+.locked-hint {
+  text-align: center;
+}
+
+.locked-message {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.unlock-hint-button {
+  background: linear-gradient(135deg, #ffa500, #ff8c00);
+  color: #ffffff;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(255, 165, 0, 0.3);
+}
+
+.unlock-hint-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 165, 0, 0.4);
+}
+
+.unlock-hint-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-hint {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
 .hint-cost {
   color: #ffa500;
   font-size: 0.9rem;
   font-weight: 500;
+}
+
+.unlocked-badge {
+  background: rgba(0, 255, 170, 0.2);
+  color: #00ffaa;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .challenge-actions {
