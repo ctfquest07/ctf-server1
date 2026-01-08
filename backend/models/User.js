@@ -51,7 +51,9 @@ const UserSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Challenge'
     },
+    challengeTitle: String,
     hintIndex: Number,
+    hintCost: Number,
     unlockedAt: {
       type: Date,
       default: Date.now

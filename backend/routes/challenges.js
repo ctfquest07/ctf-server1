@@ -258,12 +258,14 @@ router.post('/:id/unlock-hint', protect, async (req, res) => {
     user.points -= hint.cost;
     user.unlockedHints.push({
       challengeId: req.params.id,
-      hintIndex: hintIndex
+      challengeTitle: challenge.title,
+      hintIndex: hintIndex,
+      hintCost: hint.cost
     });
 
     await user.save();
 
-    // If user has a team, unlock for all team members and deduct team points
+    // If user has a team, deduct team points (but don't share hint with teammates)
     if (user.team) {
       const Team = require('../models/Team');
       const team = await Team.findById(user.team._id);
@@ -272,28 +274,8 @@ router.post('/:id/unlock-hint', protect, async (req, res) => {
         // Deduct points from team
         team.points = Math.max(0, team.points - hint.cost);
         await team.save();
-
-        // Unlock hint for all team members
-        const teamMembers = await User.find({ 
-          _id: { $in: team.members },
-          _id: { $ne: userId } // Exclude current user (already unlocked)
-        });
-
-        for (const member of teamMembers) {
-          const memberAlreadyUnlocked = member.unlockedHints.some(
-            h => h.challengeId.toString() === req.params.id && h.hintIndex === hintIndex
-          );
-
-          if (!memberAlreadyUnlocked) {
-            member.unlockedHints.push({
-              challengeId: req.params.id,
-              hintIndex: hintIndex
-            });
-            await member.save();
-          }
-        }
-
-        console.log(`Hint unlocked for team ${team.name}, ${teamMembers.length + 1} members affected`);
+        
+        console.log(`Hint unlocked for user ${user.username}, team ${team.name} points deducted`);
       }
     }
 

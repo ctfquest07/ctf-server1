@@ -122,6 +122,29 @@ function UserProfile() {
             </div>
           )}
         </div>
+
+        {/* Unlocked Hints Section */}
+        {user.unlockedHints && user.unlockedHints.length > 0 && (
+          <div className="unlocked-hints">
+            <h2>Unlocked Hints ({user.unlockedHints.length})</h2>
+            <div className="hints-grid">
+              {user.unlockedHints.map((hint, idx) => (
+                <div key={idx} className="hint-card">
+                  <div className="hint-card-header">
+                    <h3>{hint.challengeTitle || 'Unknown Challenge'}</h3>
+                    <span className="hint-cost-badge">{hint.hintCost} pts</span>
+                  </div>
+                  <div className="hint-card-meta">
+                    <span className="hint-number">Hint #{hint.hintIndex + 1}</span>
+                    <span className="hint-date">
+                      {new Date(hint.unlockedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

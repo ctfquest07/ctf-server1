@@ -258,6 +258,100 @@
   font-style: italic;
 }
 
+/* Unlocked Hints Section */
+.team-hints-section {
+  margin-top: 3rem;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+.team-hints-section h2 {
+  color: #00ffaa;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.hints-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.member-hints-group {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.member-hints-header {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.member-name-badge {
+  background: linear-gradient(135deg, #00ffaa, #00cc88);
+  color: #0a0e17;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.hint-detail-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.hint-detail-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(0, 255, 170, 0.3);
+}
+
+.hint-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.hint-challenge {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.hint-meta {
+  color: #8a8a8a;
+  font-size: 0.85rem;
+}
+
+.hint-cost-badge {
+  background: rgba(255, 165, 0, 0.2);
+  color: #ffa500;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.no-hints {
+  text-align: center;
+  padding: 2rem;
+  color: #888;
+  font-style: italic;
+}
+
 .loading, .error-message {
   text-align: center;
   padding: 3rem;
@@ -271,6 +365,100 @@
   border: 1px solid rgba(255, 107, 107, 0.3);
   border-radius: 8px;
   margin-bottom: 2rem;
+}
+
+/* Unlocked Hints Section */
+.team-hints-section {
+  margin-top: 3rem;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+.team-hints-section h2 {
+  color: #00ffaa;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.hints-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.member-hints-group {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.member-hints-header {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  color: #ffffff;
+}
+
+.member-name-badge {
+  background: rgba(0, 255, 170, 0.15);
+  color: #00ffaa;
+  padding: 0.3rem 0.8rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.hint-detail-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.hint-detail-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(0, 255, 170, 0.2);
+}
+
+.hint-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.hint-challenge {
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.hint-meta {
+  color: #8a8a8a;
+  font-size: 0.85rem;
+}
+
+.hint-cost-badge {
+  background: rgba(255, 165, 0, 0.2);
+  color: #ffa500;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.no-hints {
+  text-align: center;
+  padding: 2rem;
+  color: #888;
+  font-style: italic;
 }
 
 /* Responsive */

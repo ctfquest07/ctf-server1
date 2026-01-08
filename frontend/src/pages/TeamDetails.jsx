@@ -172,6 +172,37 @@ function TeamDetails() {
           </div>
         )}
       </div>
+
+      {/* Unlocked Hints Section */}
+      <div className="team-hints-section">
+        <h2>Unlocked Hints</h2>
+        {team.members.some(m => m.unlockedHints && m.unlockedHints.length > 0) ? (
+          <div className="hints-list">
+            {team.members.map(member => (
+              member.unlockedHints && member.unlockedHints.length > 0 && (
+                <div key={member._id} className="member-hints-group">
+                  <h3 className="member-hints-header">
+                    <span className="member-name-badge">{member.username}</span>
+                  </h3>
+                  {member.unlockedHints.map((hint, idx) => (
+                    <div key={idx} className="hint-detail-card">
+                      <div className="hint-info">
+                        <span className="hint-challenge">{hint.challengeTitle || 'Unknown Challenge'}</span>
+                        <span className="hint-meta">Hint #{hint.hintIndex + 1}</span>
+                      </div>
+                      <div className="hint-cost-badge">{hint.hintCost} pts</div>
+                    </div>
+                  ))}
+                </div>
+              )
+            ))}
+          </div>
+        ) : (
+          <div className="no-hints">
+            <p>No hints unlocked yet</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

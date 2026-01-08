@@ -209,3 +209,74 @@
     padding: 1rem;
   }
 }
+
+/* Unlocked Hints Section */
+.unlocked-hints {
+  margin-top: 3rem;
+}
+
+.unlocked-hints h2 {
+  color: #00ffaa;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.hints-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.hint-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.hint-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(0, 255, 170, 0.3);
+  transform: translateY(-2px);
+}
+
+.hint-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.hint-card-header h3 {
+  color: #ffffff;
+  font-size: 1.1rem;
+  margin: 0;
+  flex: 1;
+}
+
+.unlocked-hints .hint-cost-badge {
+  background: rgba(255, 165, 0, 0.2);
+  color: #ffa500;
+  padding: 0.3rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.hint-card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #8a8a8a;
+  font-size: 0.85rem;
+}
+
+.hint-number {
+  font-weight: 500;
+}
+
+.hint-date {
+  color: #666;
+}
