@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import ScoreGraph from '../components/ScoreGraph';
+import { useEventState } from '../hooks/useEventState';
 import './Scoreboard.css';
 
 function Scoreboard() {
@@ -13,7 +14,10 @@ function Scoreboard() {
   const [viewType, setViewType] = useState('teams');
   const [lastUpdated, setLastUpdated] = useState(null);
   const [progressionData, setProgressionData] = useState(null);
+  const [eventEnded, setEventEnded] = useState(false);
+  const [eventEndedAt, setEventEndedAt] = useState(null);
   const { token, isAuthenticated } = useContext(AuthContext);
+  const { isEnded: isEventEnded } = useEventState();
   const navigate = useNavigate();
 
   const fetchScoreboard = async (isAutoRefresh = false) => {
@@ -39,6 +43,12 @@ function Scoreboard() {
       const filteredUsers = (usersRes.data.data || []).filter(user => user.role !== 'admin');
       setUsers(filteredUsers);
       setLastUpdated(new Date());
+      
+      // Check if event is ended from response
+      const eventEndedFromResponse = teamsRes.data.eventEnded || usersRes.data.eventEnded;
+      setEventEnded(eventEndedFromResponse || false);
+      setEventEndedAt(teamsRes.data.eventEndedAt || usersRes.data.eventEndedAt || null);
+      
       setError(null);
       if (!isAutoRefresh) setLoading(false);
 
@@ -84,14 +94,17 @@ function Scoreboard() {
   useEffect(() => {
     fetchScoreboard();
 
-    // Add random jitter (25-35s) to prevent thundering herd with 500 users
-    const jitter = Math.floor(Math.random() * 10000) + 25000; // 25-35 seconds
-    const interval = setInterval(() => {
-      fetchScoreboard(true);
-    }, jitter);
+    // Only auto-refresh if event is not ended (freeze leaderboard when ended)
+    if (!isEventEnded && !eventEnded) {
+      // Add random jitter (25-35s) to prevent thundering herd with 500 users
+      const jitter = Math.floor(Math.random() * 10000) + 25000; // 25-35 seconds
+      const interval = setInterval(() => {
+        fetchScoreboard(true);
+      }, jitter);
 
-    return () => clearInterval(interval);
-  }, [isAuthenticated, token, navigate]);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, token, navigate, isEventEnded, eventEnded]);
 
   if (loading) {
     return (
@@ -111,8 +124,37 @@ function Scoreboard() {
 
   return (
     <div className="scoreboard-container">
+      {(eventEnded || isEventEnded) && (
+        <div style={{
+          backgroundColor: '#ff4444',
+          color: 'white',
+          padding: '15px',
+          textAlign: 'center',
+          marginBottom: '20px',
+          borderRadius: '5px',
+          fontWeight: 'bold',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '10px'
+        }}>
+          <span>🔒</span>
+          <span>FROZEN - Event Ended</span>
+          {eventEndedAt && (
+            <span style={{ fontSize: '14px', opacity: 0.9, marginLeft: '10px' }}>
+              (Ended: {new Date(eventEndedAt).toLocaleString()})
+            </span>
+          )}
+        </div>
+      )}
       <div className="scoreboard-header">
         <h1>Scoreboard</h1>
+        {lastUpdated && (
+          <p className="last-updated">
+            Last updated: {lastUpdated.toLocaleTimeString()}
+            {(eventEnded || isEventEnded) && ' (Frozen)'}
+          </p>
+        )}
       </div>
 
       <div className="scoreboard-tabs">

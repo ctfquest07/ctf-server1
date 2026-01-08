@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import AuthContext from '../context/AuthContext'
+import { useEventState } from '../hooks/useEventState'
 import './ChallengeDetails.css'
 
 const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
@@ -9,6 +10,7 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isEnded } = useEventState();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,6 +42,11 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
+        {isEnded && (
+          <div className="modal-error" style={{ backgroundColor: '#ff4444', color: 'white', padding: '15px', marginBottom: '15px' }}>
+            ⚠️ CTF Event Has Ended - Submissions are no longer accepted
+          </div>
+        )}
         {error && <div className="modal-error">{error}</div>}
         {success && <div className="modal-success">{success}</div>}
 
@@ -53,16 +60,16 @@ const FlagSubmissionModal = ({ challenge, onClose, onSubmit }) => {
               onChange={(e) => setFlag(e.target.value)}
               placeholder="Enter the flag SECE{flag_here}"
               autoComplete="off"
-              disabled={isSubmitting || success}
+              disabled={isSubmitting || success || isEnded}
             />
           </div>
 
           <button
             type="submit"
             className="submit-flag-button"
-            disabled={isSubmitting || success}
+            disabled={isSubmitting || success || isEnded}
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Flag'}
+            {isEnded ? 'Event Ended' : isSubmitting ? 'Submitting...' : 'Submit Flag'}
           </button>
         </form>
       </div>
@@ -80,6 +87,7 @@ function ChallengeDetails() {
   const [unlockedHints, setUnlockedHints] = useState([]);
   const [unlockingHint, setUnlockingHint] = useState(null);
   const { user, isAuthenticated, token, updateUserData } = useContext(AuthContext);
+  const { eventState, isEnded } = useEventState();
 
   useEffect(() => {
     const fetchChallenge = async () => {
@@ -223,6 +231,24 @@ function ChallengeDetails() {
 
   return (
     <div className="challenge-details-container">
+      {isEnded && (
+        <div style={{
+          backgroundColor: '#ff4444',
+          color: 'white',
+          padding: '15px',
+          textAlign: 'center',
+          marginBottom: '20px',
+          borderRadius: '5px',
+          fontWeight: 'bold'
+        }}>
+          ⚠️ CTF Event Has Ended - Flag submissions are no longer accepted
+          {eventState?.endedAt && (
+            <div style={{ fontSize: '14px', marginTop: '5px', opacity: 0.9 }}>
+              Ended: {new Date(eventState.endedAt).toLocaleString()}
+            </div>
+          )}
+        </div>
+      )}
       <div className="challenge-details-header">
         <div className="header-content">
           <button onClick={() => navigate('/challenges')} className="back-button">
@@ -281,13 +307,26 @@ function ChallengeDetails() {
         )}
 
         <div className="challenge-actions">
-          <button
-            className={`solve-challenge-button ${!isAuthenticated ? 'login-required' : ''}`}
-            onClick={openModal}
-            disabled={isSolved}
-          >
-            {isSolved ? 'Solved ✓' : isAuthenticated ? 'Submit Flag' : 'Login to Solve'}
-          </button>
+          {isEnded ? (
+            <div style={{
+              padding: '15px',
+              backgroundColor: '#ffe6e6',
+              borderRadius: '5px',
+              textAlign: 'center',
+              color: '#ff4444',
+              fontWeight: 'bold'
+            }}>
+              ⚠️ Event Ended - Submissions are no longer accepted
+            </div>
+          ) : (
+            <button
+              className={`solve-challenge-button ${!isAuthenticated ? 'login-required' : ''}`}
+              onClick={openModal}
+              disabled={isSolved}
+            >
+              {isSolved ? 'Solved ✓' : isAuthenticated ? 'Submit Flag' : 'Login to Solve'}
+            </button>
+          )}
         </div>
         </div>
       </div>

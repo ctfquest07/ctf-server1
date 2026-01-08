@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import AuthContext from '../context/AuthContext'
 import Logger from '../utils/logger'
+import { useEventState } from '../hooks/useEventState'
 import './Challenges.css'
 
 const SolvesModal = ({ challenge, onClose }) => {
@@ -146,6 +147,7 @@ function Challenges() {
   const [selectedChallengeForSolves, setSelectedChallengeForSolves] = useState(null)
 
   const { user, isAuthenticated, token, updateUserData } = useContext(AuthContext)
+  const { eventState, isEnded } = useEventState()
 
   const categories = [
     { id: 'all', name: 'All Challenges' },

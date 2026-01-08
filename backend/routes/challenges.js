@@ -10,6 +10,7 @@ const { sanitizeInput, validateInput, securityHeaders } = require('../middleware
 const requestIp = require('request-ip');
 const UAParser = require('ua-parser-js');
 const crypto = require('crypto');
+const { checkEventNotEnded, isEventEnded } = require('../middleware/eventState');
 
 const { getRedisClient } = require('../utils/redis');
 // Use centralized Redis for Challenge Rate Limiting
@@ -385,7 +386,7 @@ router.post('/', protect, authorize('admin', 'superadmin'), async (req, res) => 
 // @route   POST /api/challenges/:id/submit
 // @desc    Submit a flag for a challenge
 // @access  Private
-router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
+router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (req, res) => {
   try {
     const { flag } = req.body;
 
@@ -546,13 +547,27 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
       });
     }
 
-    // Clear rate limiting attempts on successful submission
+    // Check event state again before processing scoring (double-check for race conditions)
+    const eventEnded = await isEventEnded();
+    if (eventEnded) {
+      return res.status(403).json({
+        success: false,
+        message: 'CTF event has ended. Submissions are no longer accepted.'
+      });
+    }
+
+    // Clear rate limiting attempts on successful submission (only if event is not ended)
     await clearSubmissionAttempts(req.user._id, challenge._id);
 
     // Use transaction for atomic operations to prevent race conditions
     const session = await mongoose.startSession();
     try {
       await session.withTransaction(async () => {
+        // Final check inside transaction to prevent any scoring writes if event ended
+        const eventEndedInTransaction = await isEventEnded();
+        if (eventEndedInTransaction) {
+          throw new Error('CTF event has ended. Submissions are no longer accepted.');
+        }
         // Update user with solve time and track personal solve
         await User.findByIdAndUpdate(
           req.user._id,
@@ -607,6 +622,15 @@ router.post('/:id/submit', protect, sanitizeInput, async (req, res) => {
           );
         }
       });
+    } catch (transactionError) {
+      // If transaction failed due to event ending, return appropriate error
+      if (transactionError.message && transactionError.message.includes('CTF event has ended')) {
+        return res.status(403).json({
+          success: false,
+          message: 'CTF event has ended. Submissions are no longer accepted.'
+        });
+      }
+      throw transactionError; // Re-throw other transaction errors
     } finally {
       await session.endSession();
     }

@@ -553,8 +553,13 @@ router.get('/scoreboard', protect, async (req, res) => {
       });
     }
 
+    // Check event state
+    const { getEventState } = require('../middleware/eventState');
+    const eventState = await getEventState();
+    const isEventEnded = eventState.status === 'ended';
+
     const { type = 'teams' } = req.query;
-    console.log('Fetching scoreboard data...', { type });
+    console.log('Fetching scoreboard data...', { type, eventEnded: isEventEnded });
 
     // Check Redis Cache
     const cacheKey = `scoreboard:${type}`;
@@ -562,11 +567,14 @@ router.get('/scoreboard', protect, async (req, res) => {
     try {
       const cachedData = await redisClient.get(cacheKey);
       if (cachedData) {
+        const parsedData = JSON.parse(cachedData);
         return res.json({
           success: true,
           type: type,
-          data: JSON.parse(cachedData),
-          cached: true
+          data: parsedData,
+          cached: true,
+          eventEnded: isEventEnded,
+          eventEndedAt: isEventEnded ? eventState.endedAt : null
         });
       }
     } catch (e) {
@@ -694,13 +702,17 @@ router.get('/scoreboard', protect, async (req, res) => {
         return new Date(a.tieBreakTime) - new Date(b.tieBreakTime);
       });
 
-      // Cache for 30 seconds
-      await redisClient.setex(cacheKey, 30, JSON.stringify(teamsWithPoints));
+      // Only update cache if event is not ended (freeze leaderboard when ended)
+      if (!isEventEnded) {
+        await redisClient.setex(cacheKey, 30, JSON.stringify(teamsWithPoints));
+      }
 
       res.json({
         success: true,
         type: 'teams',
-        data: teamsWithPoints
+        data: teamsWithPoints,
+        eventEnded: isEventEnded,
+        eventEndedAt: isEventEnded ? eventState.endedAt : null
       });
     } else {
       // Build query based on user role
@@ -769,13 +781,17 @@ router.get('/scoreboard', protect, async (req, res) => {
       // Limit to top 100
       users = users.slice(0, 100);
 
-      // Cache for 30 seconds
-      await redisClient.setex(cacheKey, 30, JSON.stringify(users));
+      // Only update cache if event is not ended (freeze leaderboard when ended)
+      if (!isEventEnded) {
+        await redisClient.setex(cacheKey, 30, JSON.stringify(users));
+      }
 
       res.json({
         success: true,
         type: 'users',
-        data: users
+        data: users,
+        eventEnded: isEventEnded,
+        eventEndedAt: isEventEnded ? eventState.endedAt : null
       });
     }
     // redis.disconnect(); // Don't disconnect if reusing, but here we created a new instance which is inefficient.

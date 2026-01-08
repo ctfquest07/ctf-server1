@@ -218,6 +218,7 @@ app.use('/api/notices', noticeRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/r-submission', realtimeRoutes);
 app.use('/api/timer', require('./routes/timer'));
+app.use('/api/event-control', require('./routes/eventControl'));
 
 // Enhanced security headers middleware
 // Enhanced security headers middleware - Relaxed for UX
@@ -363,6 +364,27 @@ mongoose.connect(MONGODB_URI, mongoOptions)
     // Ensure admin has correct password
     const { ensureAdminPassword } = require('./scripts/createAdminWithNewPassword');
     await ensureAdminPassword();
+
+    // Initialize EventState document and load into Redis cache
+    try {
+      const EventState = require('./models/EventState');
+      const { refreshEventStateCache } = require('./middleware/eventState');
+      
+      const eventState = await EventState.getEventState();
+      const stateObj = {
+        status: eventState.status,
+        startedAt: eventState.startedAt,
+        endedAt: eventState.endedAt,
+        startedBy: eventState.startedBy,
+        endedBy: eventState.endedBy
+      };
+      
+      await refreshEventStateCache(stateObj);
+      console.log(`[EventState] Initialized: status=${eventState.status}`);
+    } catch (err) {
+      console.error('[EventState] Error initializing event state:', err);
+      // Don't block server startup if event state initialization fails
+    }
 
     app.listen(PORT, "127.0.0.1", () => {
       console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);

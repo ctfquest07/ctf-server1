@@ -27,6 +27,11 @@ function PlatformControl() {
   const [durationMinutes, setDurationMinutes] = useState(120);
   const [remainingTime, setRemainingTime] = useState(null);
 
+  // CTF Event Control States
+  const [eventState, setEventState] = useState(null);
+  const [eventStateLoading, setEventStateLoading] = useState(false);
+  const [eventStateError, setEventStateError] = useState(null);
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -47,6 +52,23 @@ function PlatformControl() {
     };
     fetchTimer();
     const interval = setInterval(fetchTimer, 10000); // Update every 10 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch event state
+  useEffect(() => {
+    const fetchEventState = async () => {
+      try {
+        const res = await axios.get('/api/event-control/status');
+        setEventState(res.data.data);
+        setEventStateError(null);
+      } catch (err) {
+        console.error('Error fetching event state:', err);
+        setEventStateError('Failed to fetch event state');
+      }
+    };
+    fetchEventState();
+    const interval = setInterval(fetchEventState, 30000); // Update every 30 seconds
     return () => clearInterval(interval);
   }, []);
 
@@ -363,6 +385,51 @@ function PlatformControl() {
     }
   };
 
+  // CTF Event Control Functions
+  const handleStartEvent = async () => {
+    if (!window.confirm('Are you sure you want to START the CTF event? This will allow all flag submissions.')) return;
+    
+    setEventStateLoading(true);
+    setEventStateError(null);
+    try {
+      const res = await axios.post('/api/event-control/start', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setEventState(res.data.data);
+      setSuccessMessage(res.data.message);
+      setTimeout(() => setSuccessMessage(''), 5000);
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Failed to start event';
+      setEventStateError(errorMsg);
+      setError(errorMsg);
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setEventStateLoading(false);
+    }
+  };
+
+  const handleEndEvent = async () => {
+    if (!window.confirm('Are you sure you want to END the CTF event? This will BLOCK all flag submissions and FREEZE the leaderboard. This action cannot be easily undone.')) return;
+    
+    setEventStateLoading(true);
+    setEventStateError(null);
+    try {
+      const res = await axios.post('/api/event-control/end', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setEventState(res.data.data);
+      setSuccessMessage(res.data.message);
+      setTimeout(() => setSuccessMessage(''), 5000);
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Failed to end event';
+      setEventStateError(errorMsg);
+      setError(errorMsg);
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setEventStateLoading(false);
+    }
+  };
+
   const filteredUsers = users.filter(u => {
     const matchesSearch = (
       u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -410,6 +477,73 @@ function PlatformControl() {
 
       <div className="platform-controls-section">
         <div className="global-controls">
+          {/* CTF Event Control */}
+          <div className="control-card" style={{ border: eventState?.status === 'ended' ? '2px solid #ff4444' : '1px solid #ddd' }}>
+            <h3>CTF Event Control</h3>
+            <p>Manually START or END the CTF event. When ended, all submissions are blocked and leaderboard is frozen.</p>
+            
+            {eventState && (
+              <div className="event-state-display" style={{ marginBottom: '15px', padding: '10px', backgroundColor: eventState.status === 'ended' ? '#ffe6e6' : eventState.status === 'started' ? '#e6ffe6' : '#f0f0f0', borderRadius: '5px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                  <span style={{ 
+                    fontSize: '20px', 
+                    fontWeight: 'bold',
+                    color: eventState.status === 'ended' ? '#ff4444' : eventState.status === 'started' ? '#44ff44' : '#888'
+                  }}>
+                    {eventState.status === 'ended' ? '●' : eventState.status === 'started' ? '●' : '○'}
+                  </span>
+                  <span style={{ fontSize: '18px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                    {eventState.status === 'not_started' ? 'Not Started' : eventState.status === 'started' ? 'Started' : 'Ended'}
+                  </span>
+                </div>
+                {eventState.startedAt && (
+                  <p style={{ margin: '5px 0', fontSize: '14px' }}>
+                    Started: {new Date(eventState.startedAt).toLocaleString()}
+                  </p>
+                )}
+                {eventState.endedAt && (
+                  <p style={{ margin: '5px 0', fontSize: '14px', color: '#ff4444', fontWeight: 'bold' }}>
+                    Ended: {new Date(eventState.endedAt).toLocaleString()}
+                  </p>
+                )}
+                {eventState.status === 'ended' && (
+                  <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#fff', borderRadius: '5px', border: '1px solid #ff4444' }}>
+                    <strong style={{ color: '#ff4444' }}>⚠️ Event Ended</strong>
+                    <p style={{ margin: '5px 0', fontSize: '13px' }}>All flag submissions are blocked. Leaderboard is frozen.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {eventStateError && (
+              <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#ffe6e6', borderRadius: '5px', color: '#ff4444' }}>
+                {eventStateError}
+              </div>
+            )}
+
+            <div className="event-controls">
+              {(!eventState || eventState.status === 'not_started' || eventState.status === 'ended') && (
+                <button
+                  className="btn-start"
+                  onClick={handleStartEvent}
+                  disabled={eventStateLoading}
+                  style={{ marginRight: '10px' }}
+                >
+                  {eventStateLoading ? 'Starting...' : 'START EVENT'}
+                </button>
+              )}
+              {eventState && eventState.status === 'started' && (
+                <button
+                  className="btn-stop"
+                  onClick={handleEndEvent}
+                  disabled={eventStateLoading}
+                >
+                  {eventStateLoading ? 'Ending...' : 'END EVENT'}
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Competition Timer Control */}
           <div className="control-card">
             <h3>Competition Timer</h3>
