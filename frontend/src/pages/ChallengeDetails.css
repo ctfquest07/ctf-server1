@@ -184,34 +184,53 @@
 
 .locked-hint {
   text-align: center;
+  padding: 1rem 0;
 }
 
-.locked-message {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 1rem;
+.lock-icon-wrapper {
+  display: flex;
+  justify-content: center;
   margin-bottom: 1rem;
 }
 
+.lock-icon {
+  width: 48px;
+  height: 48px;
+  color: rgba(255, 170, 0, 0.6);
+  stroke-width: 1.5;
+}
+
+.locked-message {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-bottom: 1.2rem;
+  letter-spacing: 0.5px;
+}
+
 .unlock-hint-button {
-  background: linear-gradient(135deg, #ffa500, #ff8c00);
-  color: #ffffff;
-  border: none;
-  padding: 0.8rem 1.5rem;
-  border-radius: 6px;
+  background: rgba(255, 170, 0, 0.1);
+  color: #ffa500;
+  border: 2px solid rgba(255, 170, 0, 0.4);
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(255, 165, 0, 0.3);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-size: 0.85rem;
 }
 
 .unlock-hint-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 165, 0, 0.4);
+  background: rgba(255, 170, 0, 0.2);
+  border-color: rgba(255, 170, 0, 0.6);
+  transform: translateY(-1px);
 }
 
 .unlock-hint-button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 

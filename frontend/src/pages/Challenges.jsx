@@ -157,9 +157,11 @@ function Challenges() {
     { id: 'misc', name: 'Miscellaneous' }
   ]
 
-  const fetchChallenges = async () => {
+  const fetchChallenges = async (showLoadingState = true) => {
     try {
-      setLoading(true);
+      if (showLoadingState) {
+        setLoading(true);
+      }
       Logger.info('FETCH_CHALLENGES_START');
       
       const config = token ? {
@@ -172,7 +174,9 @@ function Challenges() {
 
       if (!res.data.data || !Array.isArray(res.data.data)) {
         setChallenges([]);
-        setLoading(false);
+        if (showLoadingState) {
+          setLoading(false);
+        }
         return;
       }
 
@@ -181,19 +185,30 @@ function Challenges() {
         : res.data.data.filter(challenge => challenge.isVisible === true);
 
       setChallenges(visibleChallenges);
-      setLoading(false);
+      if (showLoadingState) {
+        setLoading(false);
+      }
       Logger.info('FETCH_CHALLENGES_SUCCESS', { 
         count: visibleChallenges.length
       });
     } catch (err) {
       Logger.error('FETCH_CHALLENGES_ERROR', { error: err.message });
       setError('Failed to fetch challenges. Please try again.');
-      setLoading(false);
+      if (showLoadingState) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchChallenges();
+    fetchChallenges(true);
+    
+    // Poll for new challenges every 10 seconds (without showing loading state)
+    const pollInterval = setInterval(() => {
+      fetchChallenges(false);
+    }, 10000);
+    
+    return () => clearInterval(pollInterval);
   }, [user?.role, token, isAuthenticated]);
 
   const openModal = (challenge) => {
