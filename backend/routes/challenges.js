@@ -191,7 +191,7 @@ router.get('/:id/solves', protect, async (req, res) => {
 router.post('/:id/unlock-hint', protect, async (req, res) => {
   try {
     const { hintIndex } = req.body;
-    const userId = req.user.id;
+    const userId = req.user._id || req.user.id;
 
     console.log('Unlock hint request:', { userId, hintIndex, challengeId: req.params.id });
 
