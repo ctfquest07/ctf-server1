@@ -144,16 +144,21 @@ function ChallengeDetails() {
     const userPoints = user.points || 0;
     const hasTeam = user.team && user.team._id;
     
-    // If user has a team, fetch the latest team points
+    // If user has a team, fetch the latest team points using the team ID
     let teamPoints = 0;
     if (hasTeam) {
       try {
-        const teamRes = await axios.get(`/api/teams/my/team`, {
+        const teamRes = await axios.get(`/api/teams/${user.team._id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        teamPoints = teamRes.data.data.points || 0;
+        // Calculate team points from members (as backend does)
+        const calculatedPoints = teamRes.data.data.members.reduce((sum, member) => sum + (member.points || 0), 0);
+        teamPoints = calculatedPoints || teamRes.data.data.points || 0;
+        console.log('Fetched team points:', teamPoints);
       } catch (err) {
         console.error('Error fetching team points:', err);
+        // Fallback to user.team.points if fetch fails
+        teamPoints = user.team.points || 0;
       }
     }
     
