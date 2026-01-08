@@ -252,11 +252,15 @@ router.post('/:id/unlock-hint', protect, async (req, res) => {
     let availablePoints = user.points;
 
     if (user.team) {
-      team = await Team.findById(user.team._id);
+      team = await Team.findById(user.team._id).populate('members', 'points');
       if (team) {
-        availablePoints = team.points;
+        // Calculate team points from members (same as GET endpoint)
+        availablePoints = team.members.reduce((sum, member) => sum + (member.points || 0), 0);
+        console.log('Team points calculated:', { teamName: team.name, points: availablePoints });
       }
     }
+
+    console.log('Available points for unlock:', { availablePoints, hintCost: hint.cost, hasTeam: !!team });
 
     // Check if enough points available
     if (availablePoints < hint.cost) {
@@ -274,16 +278,14 @@ router.post('/:id/unlock-hint', protect, async (req, res) => {
       hintIndex: hintIndex,
       hintCost: hint.cost
     });
+
+    // Deduct points from user (team points are calculated from members)
+    user.points = Math.max(0, user.points - hint.cost);
     await user.save();
 
-    // Deduct points from team (if in team) or user (if individual)
     if (team) {
-      team.points = Math.max(0, team.points - hint.cost);
-      await team.save();
-      console.log(`Hint unlocked for user ${user.username}, team ${team.name} points deducted`);
+      console.log(`Hint unlocked for user ${user.username}, team ${team.name} points reduced (calculated from members)`);
     } else {
-      user.points -= hint.cost;
-      await user.save();
       console.log(`Hint unlocked for user ${user.username}, individual points deducted`);
     }
 
