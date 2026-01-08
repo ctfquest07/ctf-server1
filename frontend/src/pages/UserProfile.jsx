@@ -93,12 +93,6 @@ function UserProfile() {
             <h3>Team</h3>
             <div className="stat-value">{user.team?.name || 'No Team'}</div>
           </div>
-          <div className="stat-card">
-            <h3>Joined</h3>
-            <div className="stat-value">
-              {new Date(user.createdAt).toLocaleDateString()}
-            </div>
-          </div>
         </div>
 
         <div className="solved-challenges">
