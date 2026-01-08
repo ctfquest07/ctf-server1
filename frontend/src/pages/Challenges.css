@@ -32,7 +32,11 @@
   margin: 0 0 1.5rem 0;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: #ffffff;
+  background: linear-gradient(135deg, #ffffff 0%, #00ffaa 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 30px rgba(0, 255, 170, 0.2);
 }
 
 .category-nav {
