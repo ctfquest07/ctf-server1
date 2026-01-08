@@ -20,6 +20,9 @@
   margin: 0 auto;
   padding: 0 2rem;
   text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .challenge-details-header h1 {
