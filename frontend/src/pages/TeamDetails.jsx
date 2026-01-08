@@ -133,6 +133,7 @@ function TeamDetails() {
             <div className="member-stats">
               <div className="member-points">{captain.points || 0} pts</div>
               <div className="member-challenges">{captain.solvedChallenges?.length || 0} solved</div>
+              <div className="member-hints">{captain.unlockedHints?.length || 0} hints unlocked</div>
             </div>
           </div>
         )}
@@ -154,6 +155,7 @@ function TeamDetails() {
               <div className="member-stats">
                 <div className="member-points">{member.points || 0} pts</div>
                 <div className="member-challenges">{member.solvedChallenges?.length || 0} solved</div>
+                <div className="member-hints">{member.unlockedHints?.length || 0} hints unlocked</div>
               </div>
             </div>
           ))}

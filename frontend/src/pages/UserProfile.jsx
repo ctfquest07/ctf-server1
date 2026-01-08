@@ -90,6 +90,10 @@ function UserProfile() {
             <div className="stat-value">{user.solvedChallenges?.length || 0}</div>
           </div>
           <div className="stat-card">
+            <h3>Hints Unlocked</h3>
+            <div className="stat-value">{user.unlockedHints?.length || 0}</div>
+          </div>
+          <div className="stat-card">
             <h3>Team</h3>
             <div className="stat-value">{user.team?.name || 'No Team'}</div>
           </div>

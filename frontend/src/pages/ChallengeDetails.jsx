@@ -140,6 +140,13 @@ function ChallengeDetails() {
       return;
     }
 
+    const hint = challenge.hints[hintIndex];
+    const confirmMessage = `Are you sure you want to unlock this hint for ${hint.cost} points?\n\nYour points: ${user.points}\nAfter unlock: ${user.points - hint.cost} points`;
+    
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
     try {
       setUnlockingHint(hintIndex);
       const res = await axios.post(
