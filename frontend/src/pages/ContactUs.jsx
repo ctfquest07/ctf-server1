@@ -47,52 +47,33 @@ function ContactUs() {
 
       <div className="contact-content">
         <div className="contact-info">
-          <div className="info-card">
-            <div className="info-item">
-              <div className="info-icon-wrapper">
-                <i className="fas fa-map-marker-alt"></i>
-              </div>
-              <div className="info-details">
-                <h3>Location</h3>
-                <p>Sri Eshwar college of Engineering</p>
-                <p>Kinathukadavu, Coimbatore, Tamil Nadu, India</p>
-              </div>
+          <div className="info-item">
+            <span className="info-icon">📍</span>
+            <div>
+              <h3>Location</h3>
+              <p>Sri Eshwar college of Engineering</p>
+              <p>Kinathukadavu, Coimbatore, Tamil Nadu, India</p>
             </div>
           </div>
-
-          <div className="info-card">
-            <div className="info-item">
-              <div className="info-icon-wrapper">
-                <i className="fas fa-envelope"></i>
-              </div>
-              <div className="info-details">
-                <h3>Email</h3>
-                <p>ctfquest@gmail.com</p>
-              </div>
+          <div className="info-item">
+            <span className="info-icon">📧</span>
+            <div>
+              <h3>Email</h3>
+              <p>ctfquest@gmail.com</p>
             </div>
           </div>
-
-          <div className="info-card">
-            <div className="info-item">
-              <div className="info-icon-wrapper">
-                <i className="fas fa-phone-alt"></i>
-              </div>
-              <div className="info-details">
-                <h3>Contact</h3>
-                <p>+91 63819 26572</p>
-              </div>
+          <div className="info-item">
+            <span className="info-icon">📞</span>
+            <div>
+              <h3>Contact</h3>
+              <p>+91 63819 26572</p>
             </div>
           </div>
-
-          <div className="info-card">
-            <div className="info-item">
-              <div className="info-icon-wrapper">
-                <i className="fab fa-discord"></i>
-              </div>
-              <div className="info-details">
-                <h3>Social</h3>
-                <p>Discord: CTFQuest</p>
-              </div>
+          <div className="info-item">
+            <span className="info-icon">💬</span>
+            <div>
+              <h3>Social</h3>
+              <p>Discord: CTFQuest</p>
             </div>
           </div>
         </div>
