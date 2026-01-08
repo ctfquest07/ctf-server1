@@ -135,7 +135,8 @@ router.post('/', protect, authorize('admin'), async (req, res) => {
     const newNotice = new Notice({
       title,
       description,
-      createdBy: req.user._id || req.user.id
+      createdBy: req.user._id || req.user.id,
+      readBy: [req.user._id || req.user.id] // Auto-mark as read for creator
     });
 
     const notice = await newNotice.save();

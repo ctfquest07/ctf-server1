@@ -41,6 +41,10 @@ function Notice() {
   const handleNoticeClick = (notice) => {
     setSelectedNotice(notice);
     markAsRead(notice._id);
+    // Refresh the page after a short delay to update the badge
+    setTimeout(() => {
+      window.dispatchEvent(new Event('noticeRead'));
+    }, 500);
   };
 
   if (loading) {

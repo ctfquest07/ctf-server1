@@ -45,10 +45,17 @@ function Navbar() {
       };
       document.addEventListener('visibilitychange', handleVisibilityChange);
       
+      // Listen for notice read events
+      const handleNoticeRead = () => {
+        fetchUnreadCount();
+      };
+      window.addEventListener('noticeRead', handleNoticeRead);
+      
       return () => {
         clearTimeout(timeoutId);
         clearInterval(interval);
         document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('noticeRead', handleNoticeRead);
       };
     }
   }, [isAuthenticated, user]);
