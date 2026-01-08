@@ -92,13 +92,22 @@ function PlatformControl() {
       };
 
       try {
+        // Load users
         const res = await axios.get(`/api/auth/users?page=${currentPage}&limit=${itemsPerPage}`, config);
         setUsers(res.data.users || []);
         setTotalUsers(res.data.total || 0);
+
+        // Load platform settings
+        const settingsRes = await axios.get('/api/auth/platform-control/settings', config);
+        if (settingsRes.data.success) {
+          setScoreboardEnabled(settingsRes.data.data.scoreboardEnabled);
+          setMaxConnections(settingsRes.data.data.maxConnections);
+        }
+
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching users:', err);
-        setError('Failed to fetch users. Please try again.');
+        console.error('Error fetching data:', err);
+        setError('Failed to fetch data. Please try again.');
         setLoading(false);
       }
     };

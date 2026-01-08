@@ -1507,6 +1507,30 @@ router.put('/platform-control/block-submissions', protect, authorize('admin', 's
   }
 });
 
+// @route   GET /api/auth/platform-control/settings
+// @desc    Get platform control settings (Admin only)
+// @access  Private/Admin
+router.get('/platform-control/settings', protect, authorize('admin', 'superadmin'), async (req, res) => {
+  try {
+    const scoreboardEnabled = process.env.SCOREBOARD_ENABLED !== 'false';
+    const maxConnections = parseInt(process.env.MAX_CONNECTIONS) || 100;
+
+    res.json({
+      success: true,
+      data: {
+        scoreboardEnabled,
+        maxConnections
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching platform settings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching platform settings'
+    });
+  }
+});
+
 // @route   PUT /api/platform-control/scoreboard-toggle
 // @desc    Enable or disable scoreboard globally (Admin only)
 // @access  Private/Admin
