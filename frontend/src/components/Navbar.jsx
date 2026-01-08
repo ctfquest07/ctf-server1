@@ -28,8 +28,12 @@ function Navbar() {
 
   // Fetch unread notice count
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchUnreadCount();
+    if (isAuthenticated && user) {
+      // Small delay to ensure token is set in axios
+      const timeoutId = setTimeout(() => {
+        fetchUnreadCount();
+      }, 100);
+      
       // Poll every 30 seconds for new notices
       const interval = setInterval(fetchUnreadCount, 30000);
       
@@ -42,11 +46,12 @@ function Navbar() {
       document.addEventListener('visibilitychange', handleVisibilityChange);
       
       return () => {
+        clearTimeout(timeoutId);
         clearInterval(interval);
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       };
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   const fetchUnreadCount = async () => {
     // Skip if not authenticated or no token in localStorage
