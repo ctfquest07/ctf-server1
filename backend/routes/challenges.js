@@ -193,6 +193,8 @@ router.post('/:id/unlock-hint', protect, async (req, res) => {
     const { hintIndex } = req.body;
     const userId = req.user.id;
 
+    console.log('Unlock hint request:', { userId, hintIndex, challengeId: req.params.id });
+
     // Validate hint index
     if (hintIndex === undefined || hintIndex < 0) {
       return res.status(400).json({
@@ -220,16 +222,19 @@ router.post('/:id/unlock-hint', protect, async (req, res) => {
 
     const hint = challenge.hints[hintIndex];
 
-    // Get user
-    const user = await User.findById(userId);
+    // Get user with team info
+    const user = await User.findById(userId).populate('team');
     if (!user) {
+      console.error('User not found:', userId);
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
 
-    // Check if hint is already unlocked
+    console.log('User found:', { username: user.username, points: user.points, hasTeam: !!user.team });
+
+    // Check if hint is already unlocked by user
     const alreadyUnlocked = user.unlockedHints.some(
       h => h.challengeId.toString() === req.params.id && h.hintIndex === hintIndex
     );
@@ -249,7 +254,7 @@ router.post('/:id/unlock-hint', protect, async (req, res) => {
       });
     }
 
-    // Deduct points and unlock hint
+    // Deduct points from user
     user.points -= hint.cost;
     user.unlockedHints.push({
       challengeId: req.params.id,
@@ -258,6 +263,40 @@ router.post('/:id/unlock-hint', protect, async (req, res) => {
 
     await user.save();
 
+    // If user has a team, unlock for all team members and deduct team points
+    if (user.team) {
+      const Team = require('../models/Team');
+      const team = await Team.findById(user.team._id);
+      
+      if (team) {
+        // Deduct points from team
+        team.points = Math.max(0, team.points - hint.cost);
+        await team.save();
+
+        // Unlock hint for all team members
+        const teamMembers = await User.find({ 
+          _id: { $in: team.members },
+          _id: { $ne: userId } // Exclude current user (already unlocked)
+        });
+
+        for (const member of teamMembers) {
+          const memberAlreadyUnlocked = member.unlockedHints.some(
+            h => h.challengeId.toString() === req.params.id && h.hintIndex === hintIndex
+          );
+
+          if (!memberAlreadyUnlocked) {
+            member.unlockedHints.push({
+              challengeId: req.params.id,
+              hintIndex: hintIndex
+            });
+            await member.save();
+          }
+        }
+
+        console.log(`Hint unlocked for team ${team.name}, ${teamMembers.length + 1} members affected`);
+      }
+    }
+
     logActivity('HINT_UNLOCKED', {
       userId,
       username: user.username,
@@ -265,7 +304,9 @@ router.post('/:id/unlock-hint', protect, async (req, res) => {
       challengeTitle: challenge.title,
       hintIndex,
       cost: hint.cost,
-      remainingPoints: user.points
+      remainingPoints: user.points,
+      teamId: user.team?._id,
+      teamName: user.team?.name
     });
 
     res.json({
