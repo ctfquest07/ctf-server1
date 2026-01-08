@@ -246,37 +246,45 @@ router.post('/:id/unlock-hint', protect, async (req, res) => {
       });
     }
 
-    // Check if user has enough points
-    if (user.points < hint.cost) {
+    // Check if user has a team, use team points; otherwise use individual points
+    const Team = require('../models/Team');
+    let team = null;
+    let availablePoints = user.points;
+
+    if (user.team) {
+      team = await Team.findById(user.team._id);
+      if (team) {
+        availablePoints = team.points;
+      }
+    }
+
+    // Check if enough points available
+    if (availablePoints < hint.cost) {
+      const pointsType = team ? 'team' : 'individual';
       return res.status(400).json({
         success: false,
-        message: `Insufficient points. You need ${hint.cost} points but have ${user.points}`
+        message: `Insufficient points. You need ${hint.cost} points but have ${availablePoints} ${pointsType} points`
       });
     }
 
-    // Deduct points from user
-    user.points -= hint.cost;
+    // Save hint unlock to user
     user.unlockedHints.push({
       challengeId: req.params.id,
       challengeTitle: challenge.title,
       hintIndex: hintIndex,
       hintCost: hint.cost
     });
-
     await user.save();
 
-    // If user has a team, deduct team points (but don't share hint with teammates)
-    if (user.team) {
-      const Team = require('../models/Team');
-      const team = await Team.findById(user.team._id);
-      
-      if (team) {
-        // Deduct points from team
-        team.points = Math.max(0, team.points - hint.cost);
-        await team.save();
-        
-        console.log(`Hint unlocked for user ${user.username}, team ${team.name} points deducted`);
-      }
+    // Deduct points from team (if in team) or user (if individual)
+    if (team) {
+      team.points = Math.max(0, team.points - hint.cost);
+      await team.save();
+      console.log(`Hint unlocked for user ${user.username}, team ${team.name} points deducted`);
+    } else {
+      user.points -= hint.cost;
+      await user.save();
+      console.log(`Hint unlocked for user ${user.username}, individual points deducted`);
     }
 
     logActivity('HINT_UNLOCKED', {

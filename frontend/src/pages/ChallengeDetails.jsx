@@ -141,8 +141,16 @@ function ChallengeDetails() {
     }
 
     const hint = challenge.hints[hintIndex];
+    const userPoints = user.points || 0;
     const teamPoints = user.team?.points || 0;
-    const confirmMessage = `Are you sure you want to unlock this hint for ${hint.cost} points?\n\nTeam points: ${teamPoints}\nAfter unlock: ${teamPoints - hint.cost} points`;
+    
+    // Check if user has enough personal points
+    if (userPoints < hint.cost) {
+      alert(`Insufficient points! You need ${hint.cost} points but you have ${userPoints} points.\n\nNote: Hints are unlocked using YOUR personal points, not team points.`);
+      return;
+    }
+    
+    const confirmMessage = `Are you sure you want to unlock this hint for ${hint.cost} points?\n\nYour points: ${userPoints} → ${userPoints - hint.cost}\nTeam points: ${teamPoints} → ${teamPoints - hint.cost}`;
     
     if (!window.confirm(confirmMessage)) {
       return;
