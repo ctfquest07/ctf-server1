@@ -25,6 +25,25 @@ const ChallengeSchema = new mongoose.Schema({
     type: Number,
     required: [true, 'Points are required']
   },
+  // CTFd-style dynamic scoring
+  dynamicScoring: {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+    initial: {
+      type: Number, // Initial/maximum points
+      default: function() { return this.points; }
+    },
+    minimum: {
+      type: Number, // Minimum points (floor)
+      default: function() { return Math.floor(this.points * 0.25); } // 25% of initial
+    },
+    decay: {
+      type: Number, // Number of solves to reach minimum
+      default: 50 // After 50 solves, reaches minimum value
+    }
+  },
   flag: {
     type: String,
     required: [true, 'Flag is required'],
@@ -56,6 +75,37 @@ const ChallengeSchema = new mongoose.Schema({
 ChallengeSchema.virtual('solveCount').get(function() {
   return this.solvedBy ? this.solvedBy.length : 0;
 });
+
+// Method to calculate current dynamic value based on solves
+ChallengeSchema.methods.getCurrentValue = function() {
+  // If dynamic scoring is not enabled, return static points
+  if (!this.dynamicScoring?.enabled) {
+    return this.points;
+  }
+
+  const solveCount = this.solvedBy?.length || 0;
+  const initial = this.dynamicScoring.initial || this.points;
+  const minimum = this.dynamicScoring.minimum || Math.floor(this.points * 0.25);
+  const decay = this.dynamicScoring.decay || 50;
+
+  // CTFd-style logarithmic decay formula
+  // value = ((minimum - initial) / (decay ** 2)) * (solves ** 2) + initial
+  if (solveCount === 0) {
+    return initial;
+  }
+
+  if (solveCount >= decay) {
+    return minimum;
+  }
+
+  // Calculate the decay curve
+  const value = Math.floor(
+    ((minimum - initial) / Math.pow(decay, 2)) * Math.pow(solveCount, 2) + initial
+  );
+
+  // Ensure value is between minimum and initial
+  return Math.max(minimum, Math.min(initial, value));
+};
 
 // Set toJSON option to include virtuals
 ChallengeSchema.set('toJSON', { virtuals: true });

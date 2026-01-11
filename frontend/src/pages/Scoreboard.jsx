@@ -174,6 +174,7 @@ function Scoreboard() {
               <th className="rank-column">Rank</th>
               <th className="name-column">{viewType === 'teams' ? 'Team Name' : 'Username'}</th>
               <th className="points-column">Points</th>
+              <th className="solves-column">Solves</th>
             </tr>
           </thead>
           <tbody>
@@ -205,6 +206,9 @@ function Scoreboard() {
                 </td>
                 <td className="points-column">
                   <span className="points-value">{item.points || 0}</span>
+                </td>
+                <td className="solves-column">
+                  <span className="solves-count">{item.solvedChallenges?.length || 0}</span>
                 </td>
               </tr>
             ))}

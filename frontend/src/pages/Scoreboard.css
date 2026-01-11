@@ -16,6 +16,13 @@
   color: #ffffff;
   font-weight: 600;
   letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.scoreboard-subtitle {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.95rem;
+  margin-top: 0.5rem;
 }
 
 .scoreboard-tabs {
@@ -82,7 +89,8 @@
 }
 
 .scoreboard-table tbody tr {
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
 }
 
 .scoreboard-table tr:last-child td {
@@ -90,7 +98,21 @@
 }
 
 .scoreboard-table tbody tr:hover {
-  background-color: rgba(0, 255, 170, 0.03);
+  background-color: rgba(0, 255, 170, 0.05);
+  border-left-color: #00ffaa;
+}
+
+/* Highlight top 3 rows with subtle backgrounds */
+.scoreboard-table tbody tr.top-1 {
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.05), transparent);
+}
+
+.scoreboard-table tbody tr.top-2 {
+  background: linear-gradient(90deg, rgba(192, 192, 192, 0.05), transparent);
+}
+
+.scoreboard-table tbody tr.top-3 {
+  background: linear-gradient(90deg, rgba(205, 127, 50, 0.05), transparent);
 }
 
 .username-link,
@@ -132,38 +154,59 @@
 }
 
 .name-column {
-  width: 60%;
+  width: 50%;
 }
 
 .points-column {
-  width: 25%;
+  width: 20%;
   text-align: right;
   color: #00ffaa;
+}
+
+.solves-column {
+  width: 15%;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.solves-count {
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
 .challenges-column {
   text-align: center;
 }
 
-/* Rank Badges - Simple Solid Circles */
+/* Rank Badges - CTFd-style with medal colors */
 .rank-badge {
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   font-weight: 700;
-  font-size: 0.9rem;
-  color: #000;
+  font-size: 0.95rem;
+  color: #fff;
 }
 
-.rank-1,
-.rank-2,
-.rank-3 {
-  background-color: #00ffaa;
+.rank-1 {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
   color: #000000;
-  box-shadow: 0 0 10px rgba(0, 255, 170, 0.4);
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+
+.rank-2 {
+  background: linear-gradient(135deg, #C0C0C0, #A8A8A8);
+  color: #000000;
+  box-shadow: 0 0 15px rgba(192, 192, 192, 0.5);
+}
+
+.rank-3 {
+  background: linear-gradient(135deg, #CD7F32, #B87333);
+  color: #ffffff;
+  box-shadow: 0 0 15px rgba(205, 127, 50, 0.5);
 }
 
 /* Remove side borders and glows for top ranks */

@@ -316,7 +316,9 @@ function Challenges() {
                     <span className={`difficulty-badge ${challenge.difficulty.toLowerCase()}`}>
                       {challenge.difficulty}
                     </span>
-                    <span className="points-badge">{challenge.points} pts</span>
+                    <span className="points-badge">
+                      {challenge.currentValue || challenge.points} pts
+                    </span>
                   </div>
                   <h3 className="challenge-title">
                     {challenge.title}

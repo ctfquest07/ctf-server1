@@ -134,19 +134,26 @@ router.get('/', sanitizeInput, async (req, res) => {
       .skip(skip)
       .sort({ createdAt: -1 });
 
+    // Add current dynamic value to each challenge
+    const enrichedChallenges = challenges.map(challenge => {
+      const challengeObj = challenge.toObject();
+      challengeObj.currentValue = challenge.getCurrentValue();
+      return challengeObj;
+    });
+
     const response = {
       success: true,
-      count: challenges.length,
+      count: enrichedChallenges.length,
       total,
       page,
       pages: Math.ceil(total / limit),
-      data: challenges
+      data: enrichedChallenges
     };
 
-    // Cache public response (5 minutes)
+    // Cache public response (30 seconds for dynamic scoring)
     if (!isAdmin) {
       try {
-        await redisClient.setex('challenges:list:public', 300, JSON.stringify(response));
+        await redisClient.setex('challenges:list:public', 30, JSON.stringify(response));
         res.setHeader('X-Cache', 'MISS');
       } catch (err) {
         console.error('Redis set error:', err);
@@ -533,6 +540,9 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
     const clientIp = requestIp.getClientIp(req);
     const userAgent = req.get('User-Agent') || 'Unknown';
 
+    // Calculate dynamic value BEFORE submission (CTFd-style)
+    const dynamicPoints = challenge.getCurrentValue();
+    
     // Check flag using constant-time comparison to prevent timing attacks
     const expectedFlag = challenge.flag.trim();
     const submittedBuffer = Buffer.from(submittedFlag, 'utf8');
@@ -556,7 +566,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
         challenge: challenge._id,
         submittedFlag: submittedFlag,
         isCorrect: isCorrect,
-        points: isCorrect ? challenge.points : 0,
+        points: isCorrect ? dynamicPoints : 0,
         ipAddress: clientIp,
         userAgent: userAgent
       });
@@ -626,7 +636,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
         if (eventEndedInTransaction) {
           throw new Error('CTF event has ended. Submissions are no longer accepted.');
         }
-        // Update user with solve time and track personal solve
+        // Update user with solve time and track personal solve (using dynamic points)
         await User.findByIdAndUpdate(
           req.user._id,
           {
@@ -638,7 +648,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
                 solvedAt: new Date()
               }
             },
-            $inc: { points: challenge.points },
+            $inc: { points: dynamicPoints },
             $set: { lastSolveTime: new Date() }
           },
           { session }
@@ -655,12 +665,12 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
         if (user.team) {
           const Team = require('../models/Team');
 
-          // Update the team
+          // Update the team (using dynamic points)
           await Team.findByIdAndUpdate(
             user.team._id,
             {
               $addToSet: { solvedChallenges: challenge._id },
-              $inc: { points: challenge.points }
+              $inc: { points: dynamicPoints }
             },
             { session }
           );
@@ -686,7 +696,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
         try {
           const nowSeconds = Math.floor(Date.now() / 1000);
           const weight = Math.pow(10, 10);
-          const zscore = (user.points + challenge.points) * weight + (weight - nowSeconds);
+          const zscore = (user.points + dynamicPoints) * weight + (weight - nowSeconds);
 
           // Update User Scoreboard
           const userZsetKey = 'scoreboard:users:zset';
@@ -731,7 +741,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
       userId: req.user._id,
       challengeId: challenge._id,
       challengeTitle: challenge.title,
-      points: challenge.points
+      points: dynamicPoints
     });
 
     // Publish real-time submission event to admin monitoring
@@ -743,7 +753,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
         email: req.user.email,
         challenge: challenge.title,
         challengeId: challenge._id.toString(),
-        points: challenge.points,
+        points: dynamicPoints,
         submittedAt: new Date().toISOString(),
         ip: clientIp,
         submittedFlag: submittedFlag
@@ -768,7 +778,7 @@ router.post('/:id/submit', protect, sanitizeInput, checkEventNotEnded, async (re
     res.json({
       success: true,
       message: 'correct',
-      points: challenge.points,
+      points: dynamicPoints,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
